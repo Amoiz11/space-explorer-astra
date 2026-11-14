@@ -1,0 +1,35 @@
+import { useEffect } from 'react'
+import { Outlet, useLocation } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import Nav from './Nav'
+import Footer from './Footer'
+import BackgroundParticles from './BackgroundParticles'
+import ResearchDrawer from './ResearchDrawer'
+
+export default function Layout() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+
+  return (
+    <div
+      className="relative flex min-h-screen flex-col"
+      style={{ background: 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(77,163,255,0.07), transparent 70%), var(--bg-0)' }}
+    >
+      <BackgroundParticles />
+      <div className="relative z-10 flex-1">
+        <Nav />
+        <motion.main
+          key={pathname}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+          className="mx-auto max-w-[1280px] px-4 pb-10 pt-4 md:px-6"
+        >
+          <Outlet />
+        </motion.main>
+      </div>
+      <Footer />
+      <ResearchDrawer />
+    </div>
+  )
+}
