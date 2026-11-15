@@ -46,7 +46,7 @@ def step_a_seed_database() -> None:
 
     needs_seed = (
         not os.path.exists(db_path)
-        or os.path.getsize(db_path) < 100_000
+        or os.path.getsize(db_path) < 1_000_000
     )
     if needs_seed:
         shutil.copy2(seed_path, db_path)
@@ -85,7 +85,8 @@ def step_b_kernels() -> None:
     print(f"[bootstrap] Kernels: {len(missing)} missing — downloading …")
     for kernel in missing:
         try:
-            dk.download_kernel(kernel)
+            dest = os.path.join(kernels_dir, kernel["filename"])
+            dk.download_file(kernel["url"], dest)
             print(f"[bootstrap]   ✓ {kernel['filename']}")
         except Exception as e:
             print(f"[bootstrap]   ✗ {kernel['filename']}: {e}")

@@ -37,6 +37,20 @@ def _run_bootstrap_background():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Ensure seed DB is copied if main DB is missing or empty before creating tables
+    try:
+        import sys as _sys
+        import os as _os
+        _scripts_dir = _os.path.abspath(
+            _os.path.join(_os.path.dirname(__file__), "..", "..", "..", "scripts")
+        )
+        if _scripts_dir not in _sys.path:
+            _sys.path.insert(0, _scripts_dir)
+        from scripts.bootstrap import step_a_seed_database
+        step_a_seed_database()
+    except Exception as _e:
+        print(f"[Startup] DB seed check warning: {_e}")
+
     # Initialize database tables and seed baseline data (SQLite / PostgreSQL)
     init_database()
 

@@ -1,0 +1,14 @@
+.venv
+.env
+.env.*
+!.env.example
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+node_modules
+.pytest_cache
+*.db
+*.db.bak
+*.db.before_full
+!seed/space_explorer.seed.db
