@@ -1,0 +1,17 @@
+{
+  "_note": "DRAFT layer config — not verified against a pinned MMGIS version. Must be reviewed before production use.",
+  "id": "mars-perseverance-route",
+  "name": "Perseverance Traversed Route",
+  "type": "geojson",
+  "geojson_url": "http://localhost:8000/api/v1/map/layers/mars-2020/traversed-route.geojson",
+  "label": "Estimated",
+  "source": "NASA PDS PLACES Release 16.0",
+  "source_product_id": "urn:nasa:pds:mars2020_rover_places:data_localizations:best_interp.csv",
+  "is_placeholder": false,
+  "disclaimer": "Traversal segments interpolated from best_interp. Landing site reference (sol -1) is a separate Point feature, excluded from the route LineString.",
+  "style": {
+    "type": "linestring",
+    "color": "#FF4500",
+    "width": 2
+  }
+}

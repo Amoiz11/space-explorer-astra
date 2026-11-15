@@ -1,0 +1,19 @@
+{
+  "_note": "DRAFT layer config — not verified against a pinned MMGIS version. Must be reviewed before production use.",
+  "id": "moon-candidate-sites",
+  "name": "Candidate Lunar Landing Sites",
+  "type": "geojson",
+  "geojson_url": "http://localhost:8000/api/v1/map/layers/artemis-lunar/candidate-lunar-sites.geojson",
+  "label": "Unknown",
+  "source": "NASA Space Apps / Artemis Mission Planning",
+  "source_product_id": "urn:nasa:lunar:artemis:candidate_sites",
+  "is_placeholder": true,
+  "disclaimer": "Placeholder candidate areas. Frame is MOON_ME_DE421, not EPSG:4326.",
+  "style": {
+    "type": "point",
+    "color": "#00BFFF",
+    "radius": 8,
+    "stroke": "#FFFFFF",
+    "stroke_width": 1
+  }
+}

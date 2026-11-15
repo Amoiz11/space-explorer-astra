@@ -1,0 +1,17 @@
+{
+  "_note": "DRAFT layer config — not verified against a pinned MMGIS version. Must be reviewed before production use.",
+  "id": "mars-perseverance-positions",
+  "name": "Perseverance Historical Positions",
+  "type": "geojson",
+  "geojson_url": "http://localhost:8000/api/v1/map/layers/mars-2020/historical-positions.geojson",
+  "label": "Estimated",
+  "source": "NASA PDS PLACES Release 16.0",
+  "source_product_id": "urn:nasa:pds:mars2020_rover_places:data_localizations:best_interp.csv",
+  "is_placeholder": false,
+  "disclaimer": "Coordinates are Mars planetocentric (east-positive), not Earth EPSG:4326. SCLK preserved; UTC not available without SPICE kernel.",
+  "style": {
+    "type": "point",
+    "color": "#FFD700",
+    "radius": 3
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "_note": "DRAFT config — draft, unverified against MMGIS docs. Must be reviewed before production use.",
+  "_generated": "2026-11-15",
+  "name": "Moon Space Explorer Map Configuration",
+  "target": "Moon",
+  "is_placeholder": true,
+  "projection": {
+    "_note": "Moon uses MOON_ME_DE421 frame (Mean Earth/Polar Axis DE421). Not Earth EPSG:4326.",
+    "crs": "ESRI:103882",
+    "description": "Moon 2000 Simple Cylindrical",
+    "center_lon": 0.0,
+    "center_lat": -89.5,
+    "zoom": 8
+  },
+  "basemaps": [
+    {
+      "id": "lroc-basemap",
+      "name": "LROC WAC Basemap (South Polar)",
+      "type": "tile",
+      "url": "https://trek.nasa.gov/tiles/Moon/SP/LRO_LROC_WAC_Mosaic_Polar_South_79S_v01/{z}/{x}/{y}.png",
+      "_note": "URL is a placeholder. Verify tile URL with NASA Trek before deployment."
+    }
+  ],
+  "layers": [
+    {
+      "id": "candidate_sites",
+      "name": "Candidate Lunar Landing Sites",
+      "type": "vector",
+      "geojson_url": "http://localhost:8000/api/v1/map/layers/moon/candidate_sites.geojson",
+      "label": "Derived",
+      "source_product_id": "urn:nasa:lunar:artemis:candidate_sites",
+      "style": {
+        "point_color": "#00BFFF",
+        "radius": 8,
+        "opacity": 0.75,
+        "stroke_color": "#FFFFFF",
+        "stroke_width": 1
+      }
+    },
+    {
+      "id": "illumination",
+      "name": "Lunar Site Illumination Summary",
+      "type": "vector",
+      "geojson_url": "http://localhost:8000/api/v1/map/layers/moon/illumination.geojson",
+      "label": "Modelled",
+      "source_product_id": "lola-dem-75s-240m",
+      "style": {
+        "point_color": "#FFD700",
+        "radius": 7,
+        "opacity": 0.85,
+        "stroke_color": "#000000",
+        "stroke_width": 1
+      }
+    },
+    {
+      "id": "earth_visibility",
+      "name": "Lunar Site Earth Visibility Summary",
+      "type": "vector",
+      "geojson_url": "http://localhost:8000/api/v1/map/layers/moon/earth_visibility.geojson",
+      "label": "Modelled",
+      "source_product_id": "lola-dem-75s-240m",
+      "style": {
+        "point_color": "#1E90FF",
+        "radius": 7,
+        "opacity": 0.85,
+        "stroke_color": "#000000",
+        "stroke_width": 1
+      }
+    },
+    {
+      "id": "lunar_dem",
+      "name": "Lunar LOLA DEM (South Polar)",
+      "type": "raster",
+      "url": "http://localhost:8000/api/v1/map/layers/moon/lunar_dem.png",
+      "sidecar_url": "http://localhost:8000/api/v1/map/layers/moon/lunar_dem.json",
+      "label": "Derived",
+      "source_product_id": "lola-dem-75s-240m"
+    },
+    {
+      "id": "lunar_slope",
+      "name": "Lunar LOLA Slope (South Polar)",
+      "type": "raster",
+      "url": "http://localhost:8000/api/v1/map/layers/moon/lunar_slope.png",
+      "sidecar_url": "http://localhost:8000/api/v1/map/layers/moon/lunar_slope.json",
+      "label": "Derived",
+      "source_product_id": "lola-dem-75s-240m"
+    }
+  ]
+}

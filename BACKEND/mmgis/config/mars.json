@@ -1,0 +1,54 @@
+{
+  "_note": "DRAFT config — not verified against a pinned MMGIS version. Must be reviewed before production use.",
+  "_generated": "2026-11-14",
+  "name": "Mars Space Explorer Map Configuration",
+  "target": "Mars",
+  "is_placeholder": false,
+  "projection": {
+    "_note": "Mars uses planetocentric lat/lon (east-positive). Not Earth WGS84/EPSG:4326.",
+    "crs": "ESRI:104905",
+    "description": "Mars 2000 Sphere Authalic / Simple Cylindrical",
+    "center_lon": 77.4508,
+    "center_lat": 18.4446,
+    "zoom": 10
+  },
+  "basemaps": [
+    {
+      "id": "ctx-basemap",
+      "name": "CTX Basemap (Jezero Crater region)",
+      "type": "tile",
+      "url": "https://trek.nasa.gov/tiles/Mars/EQ/Mars_MRO_CTX_Mosaic_global_6m_v1/{z}/{x}/{y}.png",
+      "_note": "URL is a placeholder. Verify tile URL with NASA Trek before deployment."
+    }
+  ],
+  "layers": [
+    {
+      "id": "historical-positions",
+      "name": "Historical Rover Positions (Perseverance)",
+      "type": "geojson",
+      "geojson_url": "http://localhost:8000/api/v1/map/layers/mars-2020/historical-positions.geojson",
+      "_note": "Replace localhost with deployed backend URL. Points are Mars planetocentric coords, not EPSG:4326.",
+      "label": "Estimated",
+      "source_product_id": "urn:nasa:pds:mars2020_rover_places:data_localizations:best_interp.csv",
+      "style": {
+        "point_color": "#FFD700",
+        "radius": 3,
+        "opacity": 0.8
+      }
+    },
+    {
+      "id": "traversed-route",
+      "name": "Traversed Route (Perseverance)",
+      "type": "geojson",
+      "geojson_url": "http://localhost:8000/api/v1/map/layers/mars-2020/traversed-route.geojson",
+      "_note": "Replace localhost with deployed backend URL. LineString segments are interpolated (Estimated only).",
+      "label": "Estimated",
+      "source_product_id": "urn:nasa:pds:mars2020_rover_places:data_localizations:best_interp.csv",
+      "style": {
+        "line_color": "#FF4500",
+        "width": 2,
+        "opacity": 0.9
+      }
+    }
+  ]
+}

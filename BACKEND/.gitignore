@@ -1,0 +1,52 @@
+# Python / virtual environment
+.venv
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Environment and secrets
+.env
+*.pem
+*.key
+
+# SQLite Database and backups
+*.db
+*.db.bak
+*.sqlite3
+!seed/*.seed.db
+
+# Storage (as per Section 3 & 10 of SRS - large archives & SPICE kernels never in Git)
+storage/raw
+storage/raw/*
+storage/processed/*
+storage/images/*
+storage/kernels/*
+storage/exports/*
+kernels/
+kernels
+!storage/raw/.gitkeep
+!storage/processed/.gitkeep
+!storage/images/.gitkeep
+!storage/kernels/.gitkeep
+!storage/exports/.gitkeep
+
+# IDE and OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log

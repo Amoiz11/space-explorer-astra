@@ -1,0 +1,18 @@
+{
+  "_note": "DRAFT layer config — draft, unverified against MMGIS docs. Must be reviewed before production use.",
+  "id": "earth_visibility",
+  "name": "Lunar Site Earth Visibility Summary",
+  "type": "vector",
+  "geojson_url": "http://localhost:8000/api/v1/map/layers/moon/earth_visibility.geojson",
+  "label": "Modelled",
+  "source": "SPICE ephemeris (DE421) + LOLA 240m DEM local horizon",
+  "source_product_id": "lola-dem-75s-240m",
+  "is_placeholder": true,
+  "disclaimer": "Terrain-aware direct-to-Earth line-of-sight visibility summary points. Frame is MOON_ME_DE421, planetocentric latitude, east-positive longitude. Never Earth EPSG:4326. Geometric visibility is not a guaranteed radio link.",
+  "style": {
+    "point_color": "#1E90FF",
+    "radius": 7,
+    "stroke_color": "#000000",
+    "stroke_width": 1
+  }
+}

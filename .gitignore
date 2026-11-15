@@ -1,3 +1,49 @@
-node_modules
+# Environments & Secrets
 .env
-dist
+.env.*
+.env.local
+.env.*.local
+*.env
+
+# Python virtual environment & cache
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Databases & Backups (seed database explicitly allowed)
+*.db
+*.db.bak
+*.db-wal
+*.db-shm
+*.db-journal
+test_space_explorer.db*
+!BACKEND/seed/space_explorer.seed.db
+
+# Node / Frontend build artifacts
+node_modules/
+dist/
+build/
+.next/
+frontend/qa-screenshots/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Large raw & processed storage / binary data
+BACKEND/storage/raw/
+BACKEND/storage/processed/
+BACKEND/storage/kernels/
+BACKEND/storage/exports/
+!BACKEND/storage/*/.gitkeep
+!BACKEND/storage/**/.gitkeep
+
+# IDE / OS metadata
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

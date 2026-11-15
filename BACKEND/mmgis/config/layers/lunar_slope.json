@@ -1,0 +1,19 @@
+{
+  "_note": "DRAFT layer config — draft, unverified against MMGIS docs. Must be reviewed before production use.",
+  "id": "lunar_slope",
+  "name": "Lunar LOLA Slope (South Polar)",
+  "type": "raster",
+  "url": "http://localhost:8000/api/v1/map/layers/moon/lunar_slope.png",
+  "sidecar_url": "http://localhost:8000/api/v1/map/layers/moon/lunar_slope.json",
+  "label": "Derived",
+  "source": "Derived from LOLA DEM via Horn (1981) 8-neighbor gradient",
+  "source_product_id": "lola-dem-75s-240m",
+  "is_placeholder": false,
+  "disclaimer": "Downsampled south-polar LOLA slope raster in polar stereographic projection (MOON_ME_DE421 frame, planetocentric latitude, east-positive longitude). Never Earth EPSG:4326. Planning support tool, not safety certification.",
+  "projection": {
+    "map_projection_type": "POLAR STEREOGRAPHIC",
+    "coordinate_system_name": "MEAN EARTH/POLAR AXIS OF DE421",
+    "center_latitude": -90.0,
+    "center_longitude": 0.0
+  }
+}

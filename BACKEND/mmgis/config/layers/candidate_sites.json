@@ -1,0 +1,20 @@
+{
+  "_note": "DRAFT layer config — draft, unverified against MMGIS docs. Must be reviewed before production use.",
+  "id": "candidate_sites",
+  "name": "Candidate Lunar Landing Sites",
+  "type": "vector",
+  "geojson_url": "http://localhost:8000/api/v1/map/layers/moon/candidate_sites.geojson",
+  "label": "Derived",
+  "source": "NASA Space Apps / Artemis Mission Planning",
+  "source_product_id": "urn:nasa:lunar:artemis:candidate_sites",
+  "is_placeholder": true,
+  "disclaimer": "Candidate polar landing sites and landing ellipse footprints. Frame is MOON_ME_DE421, planetocentric latitude, east-positive longitude. Never Earth EPSG:4326. Planning support tool, not safety certification.",
+  "style": {
+    "point_color": "#00BFFF",
+    "radius": 8,
+    "stroke_color": "#FFFFFF",
+    "stroke_width": 1,
+    "fill_color": "#00BFFF",
+    "fill_opacity": 0.25
+  }
+}

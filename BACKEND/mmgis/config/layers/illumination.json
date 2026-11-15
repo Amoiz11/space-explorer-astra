@@ -1,0 +1,18 @@
+{
+  "_note": "DRAFT layer config — draft, unverified against MMGIS docs. Must be reviewed before production use.",
+  "id": "illumination",
+  "name": "Lunar Site Illumination Summary",
+  "type": "vector",
+  "geojson_url": "http://localhost:8000/api/v1/map/layers/moon/illumination.geojson",
+  "label": "Modelled",
+  "source": "SPICE ephemeris (DE421) + LOLA 240m DEM local horizon",
+  "source_product_id": "lola-dem-75s-240m",
+  "is_placeholder": true,
+  "disclaimer": "Terrain-aware solar illumination summary points. Frame is MOON_ME_DE421, planetocentric latitude, east-positive longitude. Never Earth EPSG:4326. Planning support tool, not safety certification.",
+  "style": {
+    "point_color": "#FFD700",
+    "radius": 7,
+    "stroke_color": "#000000",
+    "stroke_width": 1
+  }
+}
