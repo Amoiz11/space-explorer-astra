@@ -127,7 +127,66 @@ Configure the container or service orchestrator with the following operational c
 
 ---
 
-## 6. Backup & Disaster Recovery Note
+## 6. Click-by-Click Deployment Guides
+
+### Deploying the Backend on Render
+
+1. **Sign in to Render:**
+   Navigate to the Render dashboard and click **New +** -> **Web Service**.
+2. **Connect Repository:**
+   Select your GitHub repository (`space-explorer1`) and click **Connect**.
+   *(Note: Alternatively, you can use the Blueprint feature which will automatically detect `render.yaml` at the root).*
+3. **Configure Service Settings:**
+   - **Name:** `space-explorer-backend` (or your choice)
+   - **Region:** Choose a region close to your users (e.g. Frankfurt, Oregon, Ohio)
+   - **Branch:** `main`
+   - **Root Directory:** `BACKEND`
+   - **Runtime:** `Python 3`
+   - **Build Command:** `pip install -r backend/requirements.txt`
+   - **Start Command:** `uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`
+4. **Configure Health Check Path:**
+   - Expand **Advanced** settings.
+   - Set **Health Check Path** to `/health`.
+5. **Set Environment Variables:**
+   Under the **Environment Variables** tab, add:
+   - `PYTHON_VERSION`: `3.10.11`
+   - `BOOTSTRAP_ON_START`: `true`
+   - `CORS_ORIGINS`: `https://your-frontend-app.vercel.app,http://localhost:5173` *(update with your Vercel domain once deployed)*
+   - `ADMIN_KEY`: `<generate-a-secure-secret-key>`
+   - `GROQ_API_KEY`: `<your-groq-api-key>` *(optional, enables LLM assistant)*
+   - `GROQ_MODEL`: `llama-3.3-70b-versatile` *(optional)*
+   - `NASA_API_KEY`: `<your-nasa-open-api-key>` *(optional)*
+6. **Deploy:**
+   Click **Create Web Service**. Wait for the build and initial health check to succeed.
+   Copy your service URL (e.g., `https://space-explorer-backend.onrender.com`).
+
+---
+
+### Deploying the Frontend on Vercel
+
+1. **Sign in to Vercel:**
+   Go to the Vercel dashboard and click **Add New...** -> **Project**.
+2. **Import Git Repository:**
+   Find and import the `space-explorer1` repository.
+3. **Configure Project:**
+   - **Project Name:** `space-explorer-frontend` (or your choice)
+   - **Framework Preset:** `Vite`
+   - **Root Directory:** Click **Edit** and select `frontend`.
+   - **Build Command:** `npm run build` (default)
+   - **Output Directory:** `dist` (default)
+   - **Install Command:** `npm install` (default)
+4. **Set Environment Variables:**
+   Under **Environment Variables**, add:
+   - `VITE_API_BASE_URL`: `https://space-explorer-backend.onrender.com` *(paste your backend Render URL without trailing slash)*
+5. **Deploy:**
+   Click **Deploy**.
+   Vercel will build the frontend and serve it globally with SPA routing configured via `frontend/vercel.json`.
+6. **Update Backend CORS:**
+   Copy the assigned Vercel URL (e.g., `https://space-explorer-frontend.vercel.app`) and update the `CORS_ORIGINS` variable in your Render dashboard so the backend permits requests from your frontend domain.
+
+---
+
+## 7. Backup & Disaster Recovery Note
 
 - **PostgreSQL**: Configure automated daily snapshots with point-in-time recovery (PITR) through your cloud database provider.
 - **PLACES Raw Data**: The PDS raw CSV files can be downloaded from the NASA PDS Geosciences Node at any time. Keep raw archives cached in an S3-compatible object bucket if air-gapped rebuilding is needed.

@@ -1,4 +1,5 @@
 import os
+import threading
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,25 +7,46 @@ from backend.app.config import settings
 from backend.app.api.router import api_router
 from backend.app.database.init_db import init_database
 from backend.app.utils.error_handlers import http_exception_handler, generic_exception_handler
+from backend.app.core import bootstrap_state
+
+
+def _run_bootstrap_background():
+    """Execute bootstrap steps in a background worker so the server port opens immediately."""
+    bootstrap_state.set_running()
+    try:
+        import sys as _sys
+        import os as _os
+        _scripts_dir = _os.path.abspath(
+            _os.path.join(_os.path.dirname(__file__), "..", "..", "..", "scripts")
+        )
+        if _scripts_dir not in _sys.path:
+            _sys.path.insert(0, _scripts_dir)
+        from scripts.bootstrap import run_bootstrap
+        run_bootstrap()
+
+        # After bootstrap, load SPICE kernels if now available
+        from backend.app.services.lunar_geometry_service import KernelManager
+        if KernelManager.are_kernels_available():
+            KernelManager.load_kernels()
+            print("[Bootstrap] SPICE kernels loaded successfully.")
+        bootstrap_state.set_done()
+    except Exception as _e:
+        print(f"[Bootstrap] Startup error: {_e}")
+        bootstrap_state.set_failed(str(_e))
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize database tables and seed baseline data (SQLite / PostgreSQL)
     init_database()
-    # Optional bootstrap: seed DB, download kernels and DEM, regenerate rasters
+
+    # Optional bootstrap: run in background thread so server port opens quickly
     if os.getenv("BOOTSTRAP_ON_START", "false").lower() == "true":
-        try:
-            import sys as _sys
-            import os as _os
-            _scripts_dir = _os.path.abspath(
-                _os.path.join(_os.path.dirname(__file__), "..", "..", "..", "scripts")
-            )
-            if _scripts_dir not in _sys.path:
-                _sys.path.insert(0, _scripts_dir)
-            from scripts.bootstrap import run_bootstrap
-            run_bootstrap()
-        except Exception as _e:
-            print(f"[Startup] Bootstrap error (non-fatal): {_e}")
+        t = threading.Thread(target=_run_bootstrap_background, daemon=True, name="bootstrap-worker")
+        t.start()
+    else:
+        bootstrap_state.set_done()
+
     from backend.app.config import settings, ENV_FILE_PATH
     has_key = bool(settings.GROQ_API_KEY and settings.GROQ_API_KEY.strip())
     print(
@@ -33,7 +55,8 @@ async def lifespan(app: FastAPI):
         f"Model: {settings.GROQ_MODEL}, "
         f".env path: {ENV_FILE_PATH}"
     )
-    # Load SPICE ephemeris kernels once idempotently at startup
+
+    # Load SPICE ephemeris kernels if already available on disk
     try:
         from backend.app.services.lunar_geometry_service import KernelManager
         if KernelManager.are_kernels_available():
@@ -80,7 +103,8 @@ def health_check():
         "version": settings.APP_VERSION,
         "environment": settings.APP_ENV,
         "database": "sqlite" if settings.DATABASE_URL.startswith("sqlite") else "postgresql",
-        "is_placeholder": False
+        "is_placeholder": False,
+        "bootstrap_status": bootstrap_state.get_status(),
     }
 
 # Root route

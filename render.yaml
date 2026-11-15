@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: space-explorer-backend
+    runtime: python
+    rootDir: BACKEND
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.11
+      - key: BOOTSTRAP_ON_START
+        value: "true"
+      - key: CORS_ORIGINS
+        sync: false
+      - key: ADMIN_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        sync: false
+      - key: NASA_API_KEY
+        sync: false

@@ -41,8 +41,18 @@ from backend.app.services.landing_window_service import (
     DISCLAIMERS as CMP_DISCLAIMERS,
     METHOD_TEXT,
 )
+from backend.app.core import bootstrap_state
 
 router = APIRouter(prefix="/lunar/compare", tags=["Lunar Site Comparison"])
+
+def verify_bootstrap_ready():
+    """While background bootstrap is running, comparison endpoints return 503 warming up."""
+    if bootstrap_state.is_running():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Server is warming up: SPICE kernels and DEM data are initializing. Please retry in a few moments."
+        )
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -57,6 +67,7 @@ def compare_lunar_sites(
     days: int = Query(30, ge=1, le=60, description="Simulation duration in days (1 to 60)"),
     step_minutes: int = Query(30, ge=5, description="Time step in minutes (minimum 5)"),
     db: Session = Depends(get_db),
+    _ready: bool = Depends(verify_bootstrap_ready),
 ):
     if not KernelManager.are_kernels_available():
         missing = KernelManager.check_kernels()
@@ -174,6 +185,7 @@ def _serialize_rows(rows: List[Any]) -> List[Dict[str, Any]]:
 def landing_window_compare(
     payload: CompareRequest,
     db: Session = Depends(get_db),
+    _ready: bool = Depends(verify_bootstrap_ready),
 ):
     """
     POST /api/v1/lunar/compare — B5a terrain-aware multi-site, multi-window comparison.

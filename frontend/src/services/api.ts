@@ -1,18 +1,29 @@
 /**
  * api.ts – real HTTP adapter for the Space Explorer backend.
  *
- * Base URL:  VITE_API_URL  (default http://localhost:8000/api/v1)
+ * Base URL:  VITE_API_BASE_URL (or VITE_API_URL)
+ *            - "http://localhost:8000" for local development (default)
+ *            - "" for relative reverse-proxy routing
+ *            - "https://..." for production hosting
  *
  * All shapes are mapped from REAL backend responses verified against
  * http://localhost:8000 on 2026-11-15.
  */
 
 // ─── config ────────────────────────────────────────────────────────────────
-const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000/api/v1'
+const rawEnv = (import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL) as string | undefined
+const rawBase = rawEnv !== undefined ? rawEnv.trim() : 'http://localhost:8000'
+
+const ROOT_URL = rawBase === ''
+  ? ''
+  : rawBase.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '')
+
+const BASE = ROOT_URL === '' ? '/api/v1' : `${ROOT_URL}/api/v1`
 
 // ─── generic helpers ────────────────────────────────────────────────────────
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const url = BASE + path
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+  const url = BASE + cleanPath
   let res: Response
   try {
     res = await fetch(url, { ...init, headers: { 'Content-Type': 'application/json', ...init.headers } })
@@ -54,6 +65,7 @@ export interface HealthRaw {
   environment: string
   database: string
   is_placeholder: boolean
+  bootstrap_status?: string
 }
 
 // /api/v1/lunar/sites

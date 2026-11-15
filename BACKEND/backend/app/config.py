@@ -50,9 +50,9 @@ try:
         @classmethod
         def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
             if isinstance(v, str) and not v.startswith("["):
-                return [i.strip() for i in v.split(",") if i.strip()]
+                return [i.strip().rstrip("/") for i in v.split(",") if i.strip()]
             elif isinstance(v, list):
-                return v
+                return [i.strip().rstrip("/") for i in v if isinstance(i, str) and i.strip()]
             return []
 
         model_config = SettingsConfigDict(
@@ -80,9 +80,9 @@ except ImportError:
 
             raw_cors = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173")
             if isinstance(raw_cors, str):
-                self.CORS_ORIGINS: List[str] = [i.strip() for i in raw_cors.split(",") if i.strip()]
+                self.CORS_ORIGINS: List[str] = [i.strip().rstrip("/") for i in raw_cors.split(",") if i.strip()]
             else:
-                self.CORS_ORIGINS: List[str] = raw_cors
+                self.CORS_ORIGINS: List[str] = [i.strip().rstrip("/") for i in raw_cors if isinstance(i, str) and i.strip()]
 
             self.LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "none")
             self.GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")

@@ -32,8 +32,18 @@ from backend.app.services.horizon_service import HorizonService, get_horizon_ser
 from backend.app.services.illumination_service import get_illumination_service
 from backend.app.services.earth_visibility_service import get_earth_visibility_service
 from backend.app.services.solar_power_service import get_solar_power_service
+from backend.app.core import bootstrap_state
 
 router = APIRouter(prefix="/lunar/sites", tags=["Candidate Landing Sites"])
+
+def verify_bootstrap_ready():
+    """While background bootstrap is running, data endpoints return 503 warming up."""
+    if bootstrap_state.is_running():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Server is warming up: SPICE kernels and DEM data are initializing. Please retry in a few moments."
+        )
+    return True
 
 def verify_admin_key(x_admin_key: Optional[str] = Header(None, alias="x-admin-key")):
     """Optional write protection: requires x-admin-key header matching ADMIN_KEY env var when configured."""
@@ -120,7 +130,8 @@ def delete_candidate_site(
 @router.get("/{site_id}/terrain", response_model=TerrainAnalysisResponse)
 def get_site_terrain(
     site_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _ready: bool = Depends(verify_bootstrap_ready),
 ):
     service = LunarSiteService(db)
     try:
@@ -141,7 +152,8 @@ def get_site_terrain(
 @router.get("/{site_id}/slope", response_model=SlopeAnalysisResponse)
 def get_site_slope(
     site_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _ready: bool = Depends(verify_bootstrap_ready),
 ):
     service = LunarSiteService(db)
     try:
@@ -166,7 +178,8 @@ def get_site_geometry(
     days: int = Query(30, ge=1, le=60, description="Number of days to simulate (1 to 60)"),
     step_minutes: int = Query(30, ge=5, description="Time step in minutes (minimum 5)"),
     include_horizon: bool = Query(False, description="Whether to include local terrain horizon elevation at Sun and Earth azimuths per step"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _ready: bool = Depends(verify_bootstrap_ready),
 ):
     site_service = LunarSiteService(db)
     site = site_service.repository.get_by_id(site_id)
@@ -269,7 +282,8 @@ def get_site_horizon(
     azimuth_step: float = Query(1.0, ge=0.01, le=45.0, description="Azimuth resolution in degrees"),
     max_distance_km: float = Query(100.0, ge=0.1, le=500.0, description="Maximum ray distance in km"),
     observer_height_m: float = Query(0.0, ge=0.0, description="Additional observer mast/instrument height in metres"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _ready: bool = Depends(verify_bootstrap_ready),
 ):
     site_service = LunarSiteService(db)
     site = site_service.repository.get_by_id(site_id)
@@ -336,7 +350,8 @@ def get_site_illumination(
     days: int = Query(30, ge=1, le=60, description="Simulation duration in days (1 to 60)"),
     step_minutes: int = Query(30, ge=5, description="Time step in minutes (minimum 5)"),
     observer_height_m: float = Query(0.0, ge=0.0, description="Observer instrument height above DEM surface in metres"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _ready: bool = Depends(verify_bootstrap_ready),
 ):
     """
     Terrain-aware solar illumination timeline and visibility windows (LL-14 to LL-16).
@@ -410,7 +425,8 @@ def get_site_earth_visibility(
     step_minutes: int = Query(30, ge=5, description="Time step in minutes (minimum 5)"),
     observer_height_m: float = Query(0.0, ge=0.0, description="Observer instrument height above DEM surface in metres"),
     earth_disk: str = Query("center", description="Earth disk criterion: 'center' or 'upper_limb'"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _ready: bool = Depends(verify_bootstrap_ready),
 ):
     """
     Terrain-aware direct-to-Earth line-of-sight visibility timeline and windows (LL-19 to LL-22).
@@ -487,7 +503,8 @@ def get_site_earth_visibility(
 def estimate_site_solar_power(
     site_id: str,
     payload: SolarEstimateRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _ready: bool = Depends(verify_bootstrap_ready),
 ):
     """
     Solar power generation opportunity and energy estimate for candidate landing sites (LL-23 to LL-26).
