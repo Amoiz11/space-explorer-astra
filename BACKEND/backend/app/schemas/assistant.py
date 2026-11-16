@@ -31,5 +31,6 @@ class AssistantQueryResponse(BaseModel):
     answer_mode: str  # "llm" or "template"
     llm_fallback_reason: Optional[str] = None
     disclaimers: List[str]
+    notice: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)

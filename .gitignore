@@ -49,3 +49,6 @@ BACKEND/storage/exports/
 *.swo
 .DS_Store
 Thumbs.db
+
+# presentation file
+*.pptx

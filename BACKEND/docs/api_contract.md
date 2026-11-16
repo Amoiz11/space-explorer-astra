@@ -32,7 +32,9 @@ This document defines the REST API contract between **Backend A** (Core Platform
     "version": "0.1.0",
     "environment": "development",
     "database": "sqlite",
-    "is_placeholder": false
+    "is_placeholder": false,
+    "bootstrap_status": "done",
+    "assistant_provider": "configured"
   }
   ```
 
@@ -1573,20 +1575,23 @@ The AI Mission Assistant implements a **Hybrid Architecture: Keyword Retrieval +
 - **Response Example (No Evidence Found):**
   ```json
   {
-    "answer": "Data not available in the approved sources.",
+    "answer": "Data not available in the approved sources.\nI can answer questions about rover positions, camera images, lunar sites, illumination and Earth visibility, slope, solar estimates.",
     "citations": [],
     "confidence_note": "No matching verified or approved evidence found in the official archives.",
     "evidence_found": false,
     "answer_mode": "template",
-    "disclaimers": []
+    "llm_fallback_reason": "no_evidence",
+    "disclaimers": [],
+    "notice": null
   }
   ```
 
-### Anti-Hallucination & Safety Policies:
-1. **Source Grounding**: If no evidence matches the query in official archives or knowledge documents, the assistant immediately returns `"Data not available in the approved sources."` with `evidence_found: false` and empty citations; the LLM is never invoked.
-2. **Post-Check Validation**: Model responses containing forbidden terms (`"live location"`, `"live GPS"`, `"safe landing site"`) are rejected and automatically fall back to the deterministic template answer.
-3. **Citations Provenance**: Citations are derived exclusively from retrieved database and knowledge items, never from model-generated text.
-4. **Prompt-Injection Defense**: User questions and database evidence are passed inside strict `<EVIDENCE>` data delimiters with explicit model instructions to ignore any embedded directives.
+### Anti-Hallucination, Relevance & Safety Policies:
+1. **Relevance Rule & Source Grounding**: A question matches evidence only if it contains a meaningful topic term (rover, mission, site, sol, camera, slope, illumination, Earth visibility, solar, DEM, SPICE, kernel, PLACES, horizon, comparison, etc.). Generic words ("nasa", "space", "explorer", "mission" alone) and question words do not count as a match by themselves. If nothing meaningful matches, the assistant immediately returns `"Data not available in the approved sources."` with a list of answerable topics, `evidence_found: false`, empty citations, and the LLM is never invoked.
+2. **Template Mode Fallback**: When the LLM provider is unavailable (`provider_none`, `missing_api_key`, `missing_model`), template mode returns at most 3 short factual lines (each under 200 characters) extracted from verified evidence, never prints raw markdown headings (`#`, `##`), and includes a notice: `"AI model unavailable, showing retrieved facts only"`.
+3. **Post-Check Validation**: Model responses containing forbidden terms (`"live location"`, `"live GPS"`, `"safe landing site"`) are rejected and automatically fall back to the deterministic template answer.
+4. **Citations Provenance**: Citations are derived exclusively from retrieved database and knowledge items, never from model-generated text.
+5. **Prompt-Injection Defense**: User questions and database evidence are passed inside strict `<EVIDENCE>` data delimiters with explicit model instructions to ignore any embedded directives.
 
 ---
 

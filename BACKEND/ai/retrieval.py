@@ -30,6 +30,143 @@ STOP_WORDS = {
     "i", "you", "it", "this", "that", "these", "those"
 }
 
+GENERIC_IGNORE_WORDS = {
+    "nasa", "space", "explorer", "explorers", "mission", "missions",
+    "who", "what", "where", "when", "why", "how", "which", "whose", "whom",
+    "is", "was", "are", "were", "be", "been", "being",
+    "does", "do", "did", "can", "could", "would", "should", "will", "shall",
+    "tell", "me", "about", "show", "give", "please", "know", "think", "explain",
+    "a", "an", "the", "and", "or", "of", "to", "in", "on", "for", "with", "by", "at",
+    "i", "you", "it", "this", "that", "these", "those", "we", "they", "he", "she",
+    "any", "some", "all", "much", "many", "more", "most", "hello", "hi", "hey",
+    "ceo", "president", "director", "boss", "leader", "capital", "city", "country",
+}
+
+MEANINGFUL_TOPIC_PATTERNS = [
+    # Rovers, Explorers, Specific mission names
+    r"\bperseverance\b",
+    r"\bcuriosity\b",
+    r"\bmars[- ]?2020\b",
+    r"\bmsl\b",
+    r"\bartemis\b",
+    r"\bjezero\b",
+    r"\bgale\b",
+    # Sites, Craters, Regions
+    r"\bsite-[a-zA-Z0-9_\-]+\b",
+    r"\bshackleton\b",
+    r"\bconnecting[- ]ridge\b",
+    r"\bcandidate\b",
+    r"\blanding[- ]site\b",
+    r"\blunar[- ]site\b",
+    r"\bsouth[- ]pole\b",
+    r"\bcrater\b",
+    r"\brim\b",
+    # Coordinates, Telemetry, Navigation, Locations
+    r"\bcoordinates?\b",
+    r"\bpositions?\b",
+    r"\blocations?\b",
+    r"\btraverses?\b",
+    r"\bodometry\b",
+    r"\bsol\b",
+    r"\bsclk\b",
+    r"\bplaces\b",
+    r"\blocalization\b",
+    r"\bbest_interp\b",
+    # Cameras & Images
+    r"\bcameras?\b",
+    r"\bimages?\b",
+    r"\bphotos?\b",
+    r"\bpictures?\b",
+    r"\bmastcam\b",
+    r"\bnavcam\b",
+    r"\bhazcam\b",
+    r"\bsupercam\b",
+    r"\bmcz\b",
+    r"\bwatson\b",
+    r"\bsherloc\b",
+    r"\bpixl\b",
+    r"\binstruments?\b",
+    r"\braw[- ]feed\b",
+    # Terrain, DEM, Slopes, Elevation
+    r"\bdem\b",
+    r"\bldem\b",
+    r"\blola\b",
+    r"\belevation\b",
+    r"\brelief\b",
+    r"\bslopes?\b",
+    r"\bsteep\b",
+    r"\bgradient\b",
+    r"\bterrain\b",
+    r"\btopograph",
+    # Illumination & Shadows
+    r"\billumination\b",
+    r"\bsunlight\b",
+    r"\bsun\b",
+    r"\bshadows?\b",
+    r"\blit\b",
+    r"\bunlit\b",
+    r"\bdecember\b",
+    r"\bjanuary\b",
+    # Solar Power & Irradiance
+    r"\bsolar\b",
+    r"\birradiance\b",
+    r"\bphotovoltaic\b",
+    r"\bkwh\b",
+    r"\bwh\b",
+    r"\bwatt\b",
+    r"\bpanel\b",
+    # Earth visibility & Communication
+    r"\bearth[- ]visibility\b",
+    r"\bvisibility\b",
+    r"\bline[- ]of[- ]sight\b",
+    r"\bdte\b",
+    r"\bdirect[- ]to[- ]earth\b",
+    r"\bobstruction\b",
+    # SPICE, Kernels, Reference frames
+    r"\bspice\b",
+    r"\bkernels?\b",
+    r"\bephemeris\b",
+    r"\bde421\b",
+    r"\bpck\b",
+    r"\btls\b",
+    r"\bbsp\b",
+    r"\btf\b",
+    r"\bbpc\b",
+    r"\bframe\b",
+    r"\biau\b",
+    r"\bplanetocentric\b",
+    r"\bmoon_me_de421\b",
+    # Horizon, Comparisons, Provenance
+    r"\bhorizon\b",
+    r"\bcompare\b",
+    r"\bcomparison\b",
+    r"\branking\b",
+    r"\bpds\b",
+    r"\bchecksum\b",
+    r"\bprovenance\b",
+    # Celestial bodies when combined or asked about properties
+    r"\bmoon\b",
+    r"\blunar\b",
+    r"\bmars\b",
+    r"\bearth\b",
+    # Safety
+    r"\bsafe\b",
+    r"\bsafety\b",
+]
+
+
+def has_meaningful_topic_term(text: str) -> bool:
+    """
+    Check if a query contains at least one meaningful domain/project topic term.
+    Generic words like 'nasa', 'space', 'explorer', 'mission' alone,
+    and question words do not count as a match by themselves.
+    """
+    text_lower = text.lower()
+    for pattern in MEANINGFUL_TOPIC_PATTERNS:
+        if re.search(pattern, text_lower):
+            return True
+    return False
+
 KNOWLEDGE_DIR = os.path.join(os.path.dirname(__file__), "knowledge")
 
 
@@ -102,12 +239,14 @@ class KnowledgeRetriever:
     def search_docs(self, query_tokens: List[str]) -> List[EvidenceItem]:
         """Search approved documents for matching keyword tokens."""
         matched: List[EvidenceItem] = []
-        if not query_tokens:
+        # Filter out generic ignore words (e.g. 'nasa', 'space', 'explorer', 'mission')
+        meaningful_tokens = [t for t in query_tokens if t not in GENERIC_IGNORE_WORDS and len(t) > 2]
+        if not meaningful_tokens:
             return matched
 
         for sec in self.doc_sections:
             doc_tokens = sec["tokens"]
-            matches = [t for t in query_tokens if t in doc_tokens]
+            matches = [t for t in meaningful_tokens if t in doc_tokens]
             if matches:
                 score = len(matches)
                 matched.append((score, EvidenceItem(
@@ -540,11 +679,10 @@ class KnowledgeRetriever:
         """
         Main retrieval method.
         Returns top 3 to 5 relevant EvidenceItem list.
-        Generic docs are included only for rules/frames/definitions questions,
-        or when database records are not present.
+        Only queries with meaningful topic terms match evidence.
         """
         clean_q = query.strip()
-        if not clean_q:
+        if not clean_q or not has_meaningful_topic_term(clean_q):
             return []
 
         tokens = _tokenize(clean_q)

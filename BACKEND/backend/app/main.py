@@ -111,6 +111,10 @@ app.add_middleware(
 # Base health check endpoint
 @app.get("/health", tags=["Health"])
 def health_check():
+    from ai.llm_provider import get_llm_provider
+    provider = get_llm_provider()
+    assistant_provider_status = "configured" if provider.is_configured() else "missing"
+
     return {
         "status": "ok",
         "app": settings.APP_NAME,
@@ -119,6 +123,7 @@ def health_check():
         "database": "sqlite" if settings.DATABASE_URL.startswith("sqlite") else "postgresql",
         "is_placeholder": False,
         "bootstrap_status": bootstrap_state.get_status(),
+        "assistant_provider": assistant_provider_status,
     }
 
 # Root route

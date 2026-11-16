@@ -13,6 +13,8 @@ def test_health_endpoint():
     assert "environment" in data
     assert data["is_placeholder"] is False
     assert "bootstrap_status" in data
+    assert "assistant_provider" in data
+    assert data["assistant_provider"] in ("configured", "missing")
 
 
 def test_health_bootstrap_status_states():

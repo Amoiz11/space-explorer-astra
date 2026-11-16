@@ -2,7 +2,7 @@ import re
 from typing import List, Dict, Any, Optional, Tuple
 from sqlalchemy.orm import Session
 
-from ai.retrieval import KnowledgeRetriever, EvidenceItem
+from ai.retrieval import KnowledgeRetriever, EvidenceItem, has_meaningful_topic_term
 from ai.citations import format_citations
 from ai.llm_provider import (
     get_llm_provider,
@@ -14,7 +14,10 @@ from ai.llm_provider import (
     LLMEmptyResponseError,
 )
 
-NO_EVIDENCE_ANSWER = "Data not available in the approved sources."
+NO_EVIDENCE_ANSWER = (
+    "Data not available in the approved sources.\n"
+    "I can answer questions about rover positions, camera images, lunar sites, illumination and Earth visibility, slope, solar estimates."
+)
 
 FORBIDDEN_PHRASES = [
     "live location",
@@ -106,6 +109,45 @@ def _suggest_endpoint_for_question(question: str) -> str:
         return f"GET /api/v1/lunar/sites/{site_id}/geometry"
 
 
+def _format_template_lines(raw_lines: List[str], max_lines: int = 3, max_len: int = 195) -> str:
+    """
+    Format at most 3 short factual lines (< 200 chars each), stripped of raw markdown headings and formatting.
+    Never prints raw markdown headings like ## or bold formatting.
+    """
+    cleaned: List[str] = []
+    for line in raw_lines:
+        s = line.strip()
+        if not s:
+            continue
+        # Strip markdown headers (#, ##, ###)
+        if s.startswith("#"):
+            continue
+        # Strip list bullet dashes/asterisks
+        s = re.sub(r"^[\*\-\+]\s+", "", s)
+        # Strip markdown bold/italic
+        s = re.sub(r"\*\*([^\*]+)\*\*", r"\1", s)
+        s = re.sub(r"\*([^\*]+)\*", r"\1", s)
+        s = re.sub(r"__([^_]+)__", r"\1", s)
+        # Strip links
+        s = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", s)
+        s = s.replace("`", "").strip()
+        if not s or s.startswith("#"):
+            continue
+        # If line contains multiple sentences, split
+        sentences = re.split(r"(?<=[.!?])\s+", s)
+        for sent in sentences:
+            clean_s = sent.strip()
+            if not clean_s or clean_s.startswith("#") or len(clean_s) < 5:
+                continue
+            if len(clean_s) > max_len:
+                clean_s = clean_s[:max_len - 3].rstrip() + "..."
+            if clean_s not in cleaned:
+                cleaned.append(clean_s)
+                if len(cleaned) >= max_lines:
+                    return "\n".join(cleaned)
+    return "\n".join(cleaned[:max_lines])
+
+
 class MissionAssistant:
     """
     Source-grounded AI Mission Assistant implementing retrieval + LLM + template fallback.
@@ -124,6 +166,7 @@ class MissionAssistant:
         """
         Deterministic template fallback built strictly and plainly from retrieved evidence.
         Returns (answer_string, list_of_used_evidence_items).
+        Shows at most 3 short factual lines (< 200 chars each) without raw markdown headings.
         """
         q_lower = question.lower()
         q_words = set(re.findall(r"\b[a-z0-9_\-]+\b", q_lower))
@@ -133,18 +176,18 @@ class MissionAssistant:
 
         # 1. Mars frame / coordinate reference question
         if "mars" in q_words and any(w in q_words for w in ["frame", "coordinate", "reference", "iau"]):
-            frame_text = (
-                "landing_x/y/z: SITE 1 relative frame (+X north, +Y east, +Z down); "
-                "latitude/longitude: planetocentric, east-positive, as documented in the PLACES SIS. "
-                "The Mars body-fixed frame name is not stated in the label."
-            )
             for item in evidence:
                 if "places sis" in item.text.lower() or "site 1 relative" in item.text.lower() or "mars" in item.text.lower():
                     used_evidence.append(item)
                     break
             if not used_evidence and evidence:
                 used_evidence.append(evidence[0])
-            return frame_text, used_evidence
+            lines = [
+                "landing_x/y/z: SITE 1 relative frame (+X north, +Y east, +Z down).",
+                "latitude/longitude: planetocentric, east-positive, as documented in PLACES SIS.",
+                "The Mars body-fixed frame name is not stated in the label.",
+            ]
+            return _format_template_lines(lines), used_evidence
 
         # 2. Curiosity location
         if "curiosity" in q_words and any(w in q_words for w in ["location", "status", "where"]):
@@ -154,12 +197,11 @@ class MissionAssistant:
             )
             if curiosity_item:
                 used_evidence.append(curiosity_item)
-                return curiosity_item.text, used_evidence
-            return (
-                "Curiosity Rover location status: position_status is 'unknown' and coordinates are null. "
+            lines = [
+                "Curiosity Rover position_status is 'unknown' and coordinates are null.",
                 "There is no published localization record in the database for Curiosity; missing data is NEVER fabricated.",
-                used_evidence
-            )
+            ]
+            return _format_template_lines(lines), used_evidence
 
         # 3. Perseverance position / location
         if ("perseverance" in q_words or "places" in q_words) and any(w in q_words for w in ["position", "location", "where", "coordinate", "coordinates"]):
@@ -169,22 +211,37 @@ class MissionAssistant:
             )
             if perseverance_item:
                 used_evidence.append(perseverance_item)
-                return _clean_duplicate_periods(perseverance_item.text), used_evidence
+                lines = [
+                    "Perseverance latest published position from NASA PDS PLACES archive.",
+                    perseverance_item.text[:180],
+                ]
+                return _format_template_lines(lines), used_evidence
 
-        # 4. Safety questions (must never certify as safe, planning support only)
+        # 4. Rover Camera Images questions
+        if any(w in q_words for w in ["camera", "cameras", "image", "images", "photo", "photos", "mastcam", "navcam", "hazcam", "supercam", "mcz"]):
+            img_item = next((e for e in evidence if "Camera" in e.source_name or "Images" in e.source_name or "Raw Images" in e.source_name), None)
+            if img_item:
+                used_evidence.append(img_item)
+                lines = [
+                    img_item.text[:180],
+                    "Instrument camera records include sol, captured UTC timestamp, and NASA archive hotlinks.",
+                ]
+                return _format_template_lines(lines), used_evidence
+
+        # 5. Safety questions (must never certify as safe, planning support only)
         if any(w in q_words for w in ["safe", "safety"]):
             site_items = [e for e in evidence if "Candidate Landing Site" in e.source_name]
             if site_items:
                 used_evidence.append(site_items[0])
-            answer = (
-                "Candidate sites are planning-support zones; the tool does not certify any site as safe; "
-                "DEM resolution cannot detect small hazards, boulders, or micro-topography."
-            )
+            lines = [
+                "Candidate sites are planning-support zones; the tool does not certify any site as safe.",
+                "DEM resolution cannot detect small hazards, boulders, or micro-topography.",
+            ]
             if any(item.is_placeholder for item in used_evidence) or any(item.is_placeholder for item in evidence):
-                answer += " This candidate landing site is a placeholder record, not an approved or certified landing site."
-            return answer, used_evidence
+                lines.append("This candidate landing site is a placeholder record, not an approved site.")
+            return _format_template_lines(lines), used_evidence
 
-        # 5. Illumination / sunlight hours
+        # 6. Illumination / sunlight hours
         if any(w in q_words for w in ["sunlight", "illumination", "hours", "sun", "lit", "shadow"]):
             illum_item = next(
                 (e for e in evidence if "illumination" in (e.product_id or "").lower() or "Illumination Result" in e.source_name),
@@ -195,17 +252,18 @@ class MissionAssistant:
                 site_item = next((e for e in evidence if "Candidate Landing Site" in e.source_name), None)
                 if site_item:
                     used_evidence.append(site_item)
-                ans = illum_item.text
-                if any(e.is_placeholder for e in used_evidence):
-                    ans += " Note: This candidate landing site is a placeholder record, not an approved or certified landing site."
-                return _clean_duplicate_periods(ans), used_evidence
+                lines = [
+                    illum_item.text[:180],
+                    "Sunlight illumination does not guarantee electrical power generation.",
+                ]
+                return _format_template_lines(lines), used_evidence
             elif "sunlight" in q_words or "illumination" in q_words:
                 return (
                     f"Data not available. Use GET /api/v1/lunar/sites/{site_id}/illumination to compute it.",
                     used_evidence
                 )
 
-        # 6. DEM resolution and source product
+        # 7. DEM resolution and source product
         if any(w in q_words for w in ["dem", "resolution", "lola", "ldem"]):
             tp_item = next(
                 (e for e in evidence if "Terrain Product" in e.source_name or "terrain" in (e.product_id or "").lower()),
@@ -213,14 +271,18 @@ class MissionAssistant:
             )
             if tp_item:
                 used_evidence.append(tp_item)
-                return _clean_duplicate_periods(tp_item.text), used_evidence
+                lines = [
+                    tp_item.text[:180],
+                    "75S means coverage from 75 degrees south latitude to the south pole (not 75 seconds).",
+                ]
+                return _format_template_lines(lines), used_evidence
             else:
                 return (
                     "Data not available. Use GET /api/v1/lunar/products/lola-dem-75s-240m to retrieve it.",
                     used_evidence
                 )
 
-        # 7. Terrain metrics / slope
+        # 8. Terrain metrics / slope
         if any(w in q_words for w in ["slope", "steep", "relief"]):
             tm_item = next(
                 (e for e in evidence if "Terrain Metrics" in e.source_name or "terrain-metrics" in (e.product_id or "").lower()),
@@ -228,14 +290,17 @@ class MissionAssistant:
             )
             if tm_item:
                 used_evidence.append(tm_item)
-                return _clean_duplicate_periods(tm_item.text), used_evidence
+                lines = [
+                    tm_item.text[:180],
+                ]
+                return _format_template_lines(lines), used_evidence
             else:
                 return (
                     f"Data not available. Use GET /api/v1/lunar/sites/{site_id}/slope to compute it.",
                     used_evidence
                 )
 
-        # 8. Earth visibility
+        # 9. Earth visibility
         if any(w in q_words for w in ["earth", "visibility", "comm", "communication", "dte"]):
             ev_item = next(
                 (e for e in evidence if "Earth Visibility" in e.source_name or "earth-visibility" in (e.product_id or "").lower()),
@@ -243,14 +308,18 @@ class MissionAssistant:
             )
             if ev_item:
                 used_evidence.append(ev_item)
-                return _clean_duplicate_periods(ev_item.text), used_evidence
+                lines = [
+                    ev_item.text[:180],
+                    "Geometric line-of-sight does not guarantee an established radio communication link.",
+                ]
+                return _format_template_lines(lines), used_evidence
             else:
                 return (
                     f"Data not available. Use GET /api/v1/lunar/sites/{site_id}/earth-visibility to compute it.",
                     used_evidence
                 )
 
-        # 9. Solar power estimate
+        # 10. Solar power estimate
         if any(w in q_words for w in ["solar", "power", "energy", "irradiance", "kwh", "wh"]):
             sp_item = next(
                 (e for e in evidence if "Solar Power" in e.source_name or "solar-estimate" in (e.product_id or "").lower()),
@@ -258,45 +327,58 @@ class MissionAssistant:
             )
             if sp_item:
                 used_evidence.append(sp_item)
-                return _clean_duplicate_periods(sp_item.text), used_evidence
+                lines = [
+                    sp_item.text[:180],
+                    "Sunlight illumination does not guarantee electrical power generation.",
+                ]
+                return _format_template_lines(lines), used_evidence
             else:
                 return (
                     f"Data not available. Use POST /api/v1/lunar/sites/{site_id}/solar-estimate to compute it.",
                     used_evidence
                 )
 
-        # 10. Candidate lunar landing sites
+        # 11. Candidate lunar landing sites
         if any(w in q_words for w in ["candidate", "lunar", "moon", "shackleton", "connecting", "site", "sites"]):
             site_items = [item for item in evidence if "Candidate Lunar Landing Site" in item.text]
             if site_items:
-                used_evidence.extend(site_items[:2])
-                lines = [s.text.rstrip(".") + "." for s in used_evidence]
-                lines.append("Candidate sites are planning-support zones; the tool does not certify any site as safe; DEM resolution cannot detect small hazards.")
-                if any(s.is_placeholder for s in used_evidence):
+                specific_site = next((s for s in site_items if "site-" in question and s.product_id and s.product_id in question), None)
+                if specific_site:
+                    used_evidence = [specific_site]
+                    lines = [
+                        specific_site.text.split(". ")[0] + ".",
+                        "Candidate sites are planning-support zones; the tool does not certify any site as safe.",
+                    ]
+                else:
+                    used_evidence.extend(site_items[:2])
+                    lines = [s.text.split(". ")[0] + "." for s in used_evidence]
+                if any(s.is_placeholder for s in used_evidence) or any(s.is_placeholder for s in evidence):
                     lines.append("These are placeholder/mock records, not real candidate sites.")
-                answer = " ".join(lines)
-                return _clean_duplicate_periods(answer), used_evidence
+                return _format_template_lines(lines), used_evidence
 
-        # 11. SPICE kernels
+        # 12. SPICE kernels
         if any(w in q_words for w in ["kernel", "kernels", "spice", "de421", "pck"]):
             kernel_item = next((e for e in evidence if "SPICE Kernel" in e.source_name), None)
             if kernel_item:
                 used_evidence.append(kernel_item)
-                return _clean_duplicate_periods(kernel_item.text), used_evidence
+                lines = [
+                    kernel_item.text[:180],
+                ]
+                return _format_template_lines(lines), used_evidence
 
-        # 12. Fallback to top evidence
-        lines = []
-        for item in evidence[:2]:
+        # 13. Fallback to top evidence
+        raw_candidates = []
+        for item in evidence[:3]:
             used_evidence.append(item)
             sanitized = _sanitize_evidence_text(item.text)
             if sanitized:
-                lines.append(sanitized)
+                raw_candidates.append(sanitized)
 
-        answer = " ".join(lines) if lines else NO_EVIDENCE_ANSWER
-        if any(item.is_placeholder for item in used_evidence) and "placeholder" not in answer.lower():
-            answer += " These are placeholder/mock records, not real candidate sites."
+        answer = _format_template_lines(raw_candidates, max_lines=3, max_len=195)
+        if not answer:
+            answer = NO_EVIDENCE_ANSWER
 
-        return _clean_duplicate_periods(answer), used_evidence
+        return answer, used_evidence
 
     def _determine_disclaimers(
         self,
@@ -339,10 +421,12 @@ class MissionAssistant:
 
         # Step a: No evidence found
         if not evidence:
-            is_lunar_or_space = any(w in clean_question.lower() for w in [
-                "moon", "lunar", "site", "shackleton", "connecting", "ridge", "sunlight", "illumination",
-                "slope", "visibility", "geometry", "horizon", "solar", "compare", "safe", "safety"
-            ]) or "site-" in clean_question.lower()
+            is_lunar_or_space = has_meaningful_topic_term(clean_question) and (
+                any(w in clean_question.lower() for w in [
+                    "moon", "lunar", "site", "shackleton", "connecting", "ridge", "sunlight", "illumination",
+                    "slope", "visibility", "geometry", "horizon", "solar", "compare", "safe", "safety"
+                ]) or "site-" in clean_question.lower()
+            )
 
             if is_lunar_or_space:
                 missing_endpoint = _suggest_endpoint_for_question(clean_question)
@@ -358,6 +442,7 @@ class MissionAssistant:
                 "answer_mode": "template",
                 "llm_fallback_reason": "no_evidence",
                 "disclaimers": [],
+                "notice": None,
             }
 
         # Build template answer and determine which evidence items were actually used
@@ -414,8 +499,12 @@ class MissionAssistant:
                 used_llm = False
                 fallback_reason = "network_error"
 
+        notice = "AI model unavailable, showing retrieved facts only" if not used_llm else None
+
         confidence_note = (
-            f"Answer grounded in {len(final_citations)} verified archive/knowledge evidence source(s)."
+            f"AI model unavailable, showing retrieved facts only. Answer grounded in {len(final_citations)} verified archive/knowledge evidence source(s)."
+            if not used_llm
+            else f"Answer grounded in {len(final_citations)} verified archive/knowledge evidence source(s)."
         )
 
         return {
@@ -426,6 +515,7 @@ class MissionAssistant:
             "answer_mode": "llm" if used_llm else "template",
             "llm_fallback_reason": fallback_reason if not used_llm else None,
             "disclaimers": disclaimers,
+            "notice": notice,
         }
 
 

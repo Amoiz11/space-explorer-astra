@@ -599,12 +599,84 @@ def test_no_evidence_exact_phrase_and_reasons():
     try:
         assistant = MissionAssistant(db=db, provider=NoneProvider())
         res = assistant.query("What is the capital of France?")
-        assert res["answer"] == "Data not available in the approved sources."
+        assert res["answer"] == NO_EVIDENCE_ANSWER
+        assert "Data not available in the approved sources." in res["answer"]
         assert res["answer_mode"] == "template"
         assert res["llm_fallback_reason"] == "no_evidence"
         assert res["evidence_found"] is False
     finally:
         db.close()
+
+
+def test_ceo_question_gives_no_evidence_answer():
+    """The question 'who is the ceo of nasa?' must return exactly the no-evidence answer."""
+    db = SessionLocal()
+    try:
+        assistant = MissionAssistant(db=db, provider=MockLLM())
+        res = assistant.query("who is the ceo of nasa?")
+        assert res["evidence_found"] is False
+        assert res["answer"] == NO_EVIDENCE_ANSWER
+        assert res["citations"] == []
+        assert res["answer_mode"] == "template"
+        assert res["llm_fallback_reason"] == "no_evidence"
+        lines = res["answer"].split("\n")
+        assert len(lines) == 2
+        assert lines[0] == "Data not available in the approved sources."
+        assert "rover positions" in lines[1]
+        assert "camera images" in lines[1]
+        assert "lunar sites" in lines[1]
+        assert "illumination and Earth visibility" in lines[1]
+        assert "slope" in lines[1]
+        assert "solar estimates" in lines[1]
+    finally:
+        db.close()
+
+
+def test_perseverance_cameras_question_returns_evidence():
+    """A question about Perseverance cameras must match and return verified evidence."""
+    db = SessionLocal()
+    try:
+        assistant = MissionAssistant(db=db, provider=NoneProvider())
+        res = assistant.query("What cameras are installed on Perseverance?")
+        assert res["evidence_found"] is True
+        assert len(res["citations"]) > 0
+        assert any("camera" in c["source_name"].lower() or "image" in c["source_name"].lower() for c in res["citations"])
+        assert "Perseverance" in res["answer"] or "camera" in res["answer"].lower()
+    finally:
+        db.close()
+
+
+def test_template_mode_never_returns_more_than_three_lines_nor_heading():
+    """Template mode must never return more than 3 short lines, never a heading, all <= 200 chars."""
+    db = SessionLocal()
+    try:
+        assistant = MissionAssistant(db=db, provider=NoneProvider())
+        test_queries = [
+            "Where is the latest published position of Perseverance?",
+            "What cameras does Perseverance have?",
+            "What is the DEM resolution?",
+            "What coordinate reference frame is used for Mars exploration?",
+            "What candidate landing sites are being evaluated on the Moon?",
+            "Is site-shackleton-01 safe?",
+            "What is the status of Curiosity rover?",
+        ]
+        for query in test_queries:
+            res = assistant.query(query)
+            assert res["answer_mode"] == "template"
+            assert res["evidence_found"] is True
+            assert res["notice"] == "AI model unavailable, showing retrieved facts only"
+
+            lines = [line.strip() for line in res["answer"].split("\n") if line.strip()]
+            assert 1 <= len(lines) <= 3, f"Query '{query}' returned {len(lines)} lines"
+
+            for line in lines:
+                assert len(line) <= 200, f"Line too long ({len(line)} chars): {line}"
+                assert not line.startswith("#"), f"Line starts with markdown heading: {line}"
+                assert not line.startswith("##"), f"Line starts with markdown heading: {line}"
+                assert "**" not in line, f"Line has raw bold markdown: {line}"
+    finally:
+        db.close()
+
 
 
 

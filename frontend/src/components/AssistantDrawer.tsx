@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Bot, Send, Sparkles, X } from 'lucide-react'
+import { Bot, Info, Send, Sparkles, X } from 'lucide-react'
 import { askAssistant } from '../services'
 import { useUI, type AssistantMsg } from '../store/ui'
 import Chip from './Chip'
@@ -12,6 +12,22 @@ const examples = [
   'Is Earth visible from the Moon south pole?',
   'Is Perseverance still active?',
 ]
+
+function formatPlainText(text: string): string {
+  if (!text) return ''
+  return text
+    // remove markdown headers (###, ##, #)
+    .replace(/^#{1,6}\s+/gm, '')
+    // remove bold/italic markers (**word** or *word* or __word__)
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    // convert markdown bullet dashes to clean bullets
+    .replace(/^-\s+/gm, '• ')
+    // remove markdown backticks
+    .replace(/`([^`]+)`/g, '$1')
+    .trim()
+}
 
 export default function AssistantDrawer() {
   const { assistantOpen, closeAssistant, assistantMessages, setAssistantMessages, openDrawer, drawerOpen } = useUI()
@@ -215,9 +231,17 @@ export default function AssistantDrawer() {
                       )}
                     </div>
 
+                    {/* Template mode neutral notice */}
+                    {m.a.answer_mode === 'template' && m.a.evidence_found && (
+                      <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-[var(--text-2)]">
+                        <Info size={14} className="shrink-0 text-[var(--text-2)]" />
+                        <span>AI model unavailable, showing retrieved facts only</span>
+                      </div>
+                    )}
+
                     {/* Answer text */}
                     <div className="whitespace-pre-line text-xs sm:text-sm leading-relaxed text-[var(--text-1)]">
-                      {m.a.answer}
+                      {formatPlainText(m.a.answer)}
                     </div>
 
                     {/* Citations */}
