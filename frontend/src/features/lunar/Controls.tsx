@@ -5,6 +5,7 @@ import { formatHour } from '../../utils/format'
 import SiteChip from '../../components/SiteChip'
 import Skeleton from '../../components/Skeleton'
 import ErrorState from '../../components/ErrorState'
+import Button from '../../components/Button'
 
 const labelCls = 'mb-1 block text-xs text-[var(--text-2)]'
 
@@ -150,9 +151,9 @@ export default function Controls({ sites, loading, error, onRetry, onAnalyse }: 
         </label>
       </section>
 
-      <button type="button" disabled={!canAnalyse} onClick={() => { s.runAnalysis(); onAnalyse() }} className="btn btn-primary w-full justify-center !py-3">
+      <Button type="button" variant="primary" disabled={!canAnalyse} onClick={() => { s.runAnalysis(); onAnalyse() }} className="w-full justify-center !py-3">
         Analyse
-      </button>
+      </Button>
     </div>
   )
 }

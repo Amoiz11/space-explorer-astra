@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { motion, MotionConfig, type Variants } from 'framer-motion'
 import { ArrowRight, Bot, History, Images, Moon, Rocket } from 'lucide-react'
 import HeroScene from '../../components/HeroScene'
@@ -7,7 +6,7 @@ import GlassCard from '../../components/GlassCard'
 import Skeleton from '../../components/Skeleton'
 import ErrorState from '../../components/ErrorState'
 import TiltCard from '../../components/TiltCard'
-import Chip from '../../components/Chip'
+import Button from '../../components/Button'
 import { getAllMissions, getRovers, getSites, getExplorerImages } from '../../services'
 import { useAsync } from '../../utils/useAsync'
 import { SITE_TAGLINE } from '../../config/site'
@@ -48,9 +47,6 @@ export default function HomePage() {
   const error = missions.error ?? rovers.error ?? sites.error
   const retry = () => { missions.retry(); rovers.retry(); sites.retry(); images.retry() }
 
-  const first = sites.data?.[0]
-  const isPlaceholder = missions.data?.length ? missions.data.some((m) => m.is_placeholder) : false
-
   return (
     <MotionConfig reducedMotion="user">
       {/* Hero */}
@@ -59,34 +55,19 @@ export default function HomePage() {
           <HeroScene body="earth" mode="side" moon />
         </div>
 
-        {first && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.0, duration: 0.5 }}
-            className="glass absolute right-[14%] top-[16%] z-10 hidden px-4 py-3 md:block"
-          >
-            <p className="text-xs text-[var(--text-2)]">Candidate landing site</p>
-            <p className="mt-0.5 text-base">{first.name}</p>
-            {first.coordinates ? (
-              <p className="mono mt-1 text-xs text-[var(--text-2)]">{first.coordinates.values.join(', ')} {first.coordinates.units}</p>
-            ) : (
-              <p className="mt-1 text-xs text-[var(--text-2)]">Coordinates: Unknown</p>
-            )}
-          </motion.div>
-        )}
-
         <motion.div
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}
           className="relative z-10 max-w-2xl"
         >
-          <div className="flex flex-wrap gap-2">
-            <Chip label="NASA Space Apps 2026" />
-            {isPlaceholder && <Chip label="Placeholder data" color="var(--est)" />}
-          </div>
-          <h1 className="display mt-6 text-5xl md:text-[64px]">Lunar Landing Site Navigator</h1>
+          <h1 className="display text-5xl md:text-[64px]">Lunar Landing Site Navigator</h1>
           <p className="mt-6 max-w-md text-base text-[var(--text-2)]">{SITE_TAGLINE}</p>
           <div className="mt-9 flex flex-wrap gap-3">
-            <Link to="/lunar" className="btn btn-primary">Start exploring <ArrowRight size={16} /></Link>
-            <Link to="/missions" className="btn btn-secondary">Browse missions</Link>
+            <Button to="/lunar" variant="primary" size="lg">
+              Start exploring <ArrowRight size={16} />
+            </Button>
+            <Button to="/missions" variant="secondary" size="lg">
+              Browse missions
+            </Button>
           </div>
         </motion.div>
       </section>

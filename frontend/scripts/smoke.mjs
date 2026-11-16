@@ -103,7 +103,9 @@ async function run() {
   }
 
   // 1. Home Page
-  await testPage('Home', '/')
+  await testPage('Home', '/', async (page) => {
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'home-after.png'), fullPage: true })
+  })
 
   // 2. Missions List
   await testPage('Missions', '/missions')
@@ -154,16 +156,30 @@ async function run() {
   // 8. Lunar Compare
   await testPage('Lunar Compare', '/lunar/compare')
 
-  // 9. Assistant
-  await testPage('Assistant', '/assistant', async (page) => {
+  // 9. AI Assistant Drawer
+  await testPage('AI Assistant Drawer', '/', async (page) => {
+    const askAiBtn = page.locator('button[aria-label="Ask AI Assistant"], button:has-text("Ask AI")').first()
+    await askAiBtn.click()
+
+    const drawer = page.locator('aside[aria-label="AI Research Assistant"]')
+    await drawer.waitFor({ state: 'visible', timeout: 5000 })
+
     const input = page.locator('input[aria-label="Your question"]')
-    const send = page.locator('button[type="submit"]')
+    const send = page.locator('button[aria-label="Send"]')
+
     if (await input.count() > 0) {
       await input.fill('Where is the latest published position of Perseverance?')
       await send.click()
-      await page.waitForSelector('text=Coordinates', { timeout: 15000 }).catch(() => {})
-      await page.waitForTimeout(1000)
+      await Promise.race([
+        page.waitForSelector('text=Response', { timeout: 15000 }),
+        page.waitForSelector('text=Coordinates', { timeout: 15000 }),
+        page.waitForSelector('text=Error:', { timeout: 15000 }),
+        page.waitForSelector('text=grounded', { timeout: 15000 }),
+      ]).catch(() => {})
+      await page.waitForTimeout(1500)
     }
+
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'drawer-after.png') })
   })
 
   await browser.close()

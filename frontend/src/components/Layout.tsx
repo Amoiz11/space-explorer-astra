@@ -5,6 +5,7 @@ import Nav from './Nav'
 import Footer from './Footer'
 import BackgroundParticles from './BackgroundParticles'
 import ResearchDrawer from './ResearchDrawer'
+import AssistantDrawer from './AssistantDrawer'
 
 export default function Layout() {
   const { pathname } = useLocation()
@@ -29,6 +30,7 @@ export default function Layout() {
         </motion.main>
       </div>
       <Footer />
+      <AssistantDrawer />
       <ResearchDrawer />
     </div>
   )

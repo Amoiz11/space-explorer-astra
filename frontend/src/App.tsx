@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import HomePage from './features/home/HomePage'
@@ -8,7 +9,15 @@ import MissionProfile from './features/missions/MissionProfile'
 import MapPage from './features/map/MapPage'
 import GalleryPage from './features/gallery/GalleryPage'
 import TimeMachinePage from './features/timemachine/TimeMachinePage'
-import AssistantPage from './features/assistant/AssistantPage'
+import { useUI } from './store/ui'
+
+function AssistantRedirect() {
+  const openAssistant = useUI((u) => u.openAssistant)
+  useEffect(() => {
+    openAssistant()
+  }, [openAssistant])
+  return <Navigate to="/" replace />
+}
 
 export default function App() {
   return (
@@ -24,7 +33,7 @@ export default function App() {
         <Route path="/time-machine" element={<TimeMachinePage />} />
         <Route path="/lunar" element={<LunarPage />} />
         <Route path="/lunar/compare" element={<LunarComparePage />} />
-        <Route path="/assistant" element={<AssistantPage />} />
+        <Route path="/assistant" element={<AssistantRedirect />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
