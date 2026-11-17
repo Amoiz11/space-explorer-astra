@@ -1,14 +1,14 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { Site } from '../../types'
 import { getSites } from '../../services'
 import { useLunarStore } from '../../store/lunar'
 import { useAsync } from '../../utils/useAsync'
 import { SITE_TAGLINE } from '../../config/site'
-import Chip from '../../components/Chip'
 import Disclaimer from '../../components/Disclaimer'
 import EmptyState from '../../components/EmptyState'
 import ErrorState from '../../components/ErrorState'
-import PageHeader from '../../components/PageHeader'
+import PageHero from '../../components/PageHero'
 import Skeleton from '../../components/Skeleton'
 import Controls from './Controls'
 import LunarResults from './LunarResults'
@@ -25,15 +25,14 @@ export default function LunarPage() {
     setTimeout(() => document.getElementById('lunar-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
   }
 
-  const isPlaceholder = sites.data?.length ? sites.data.some((s) => s.is_placeholder) : false
-
   return (
     <div>
-      <PageHeader
+      <PageHero
         title="Lunar Landing Navigator"
         subtitle={SITE_TAGLINE}
-        chip={isPlaceholder ? <Chip label="Placeholder data" color="var(--est)" /> : undefined}
-        actions={<a href="/lunar/compare" className="btn btn-secondary">Compare sites and dates</a>}
+        scene={{ body: 'moon', mode: 'rise', markers: true }}
+        actions={<Link to="/lunar/compare" className="btn btn-secondary">Compare sites and dates</Link>}
+        tall
       />
 
       <div className="lg:grid lg:grid-cols-[320px_1fr] lg:items-start lg:gap-6">

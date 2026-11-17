@@ -1,5 +1,6 @@
 import { motion, MotionConfig, type Variants } from 'framer-motion'
 import { ArrowRight, Bot, Images, Moon, Rocket } from 'lucide-react'
+import HeroScene from '../../components/HeroScene'
 import StatCard from '../../components/StatCard'
 import GlassCard from '../../components/GlassCard'
 import Skeleton from '../../components/Skeleton'
@@ -13,7 +14,6 @@ import { SITE_TAGLINE } from '../../config/site'
 const container: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } }
 const item: Variants = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }
 
-/** Only the modules that still exist after removing Time Machine */
 const modules = [
   { to: '/missions', title: 'Missions', text: 'Browse Mars and Moon missions with verified parameters.', icon: Rocket },
   { to: '/gallery', title: 'Image Gallery', text: 'NASA raw instrument camera imagery and archives.', icon: Images },
@@ -32,40 +32,56 @@ export default function HomePage() {
 
   return (
     <MotionConfig reducedMotion="user">
-      {/* ── Compact hero (no tall hero block; background is the fixed scene) ── */}
-      <section className="pt-8 pb-10 md:pt-14 md:pb-12">
+      {/* ── Hero Section with 3D Earth & Moon Globe ── */}
+      <section className="relative flex min-h-[calc(100svh-7.5rem)] items-center overflow-hidden py-8">
+        {/* 3D Interactive Globe Scene */}
+        <div className="absolute inset-y-0 right-0 w-full opacity-60 md:w-[68%] md:opacity-100 pointer-events-none">
+          <HeroScene body="earth" mode="side" moon />
+        </div>
+
+        {/* Hero Content with Bold, Modern Typography */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="max-w-2xl"
+          transition={{ duration: 0.7 }}
+          className="relative z-10 max-w-2xl"
         >
+          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--earth)]/30 bg-[var(--earth)]/10 px-3.5 py-1 text-xs font-semibold text-[var(--earth)] shadow-[0_0_16px_rgba(77,163,255,0.2)] backdrop-blur-md mb-6">
+            <span className="h-2 w-2 rounded-full bg-[var(--earth)] animate-pulse" />
+            NASA Space Apps • Autonomous Landing Analytics
+          </div>
+
           <h1
-            className="display font-bold tracking-tight"
+            className="display font-extrabold tracking-tight text-white drop-shadow-md"
             style={{
-              fontSize: 'clamp(2.2rem, 5vw + 1rem, 4rem)',
-              lineHeight: 1.1,
-              letterSpacing: '-0.03em',
+              fontSize: 'clamp(2.6rem, 5.5vw + 1rem, 4.4rem)',
+              lineHeight: 1.08,
+              letterSpacing: '-0.035em',
             }}
           >
-            Lunar Landing Site Navigator
+            Lunar Landing <br className="hidden sm:inline" />
+            <span className="bg-gradient-to-r from-white via-[#C9D1E0] to-[var(--earth)] bg-clip-text text-transparent">
+              Site Navigator
+            </span>
           </h1>
-          <p className="mt-4 max-w-md text-base leading-relaxed text-[var(--text-2)]">
+
+          <p className="mt-5 max-w-lg text-base sm:text-lg leading-relaxed text-[var(--text-2)] font-normal">
             {SITE_TAGLINE}
           </p>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Button to="/lunar" variant="primary" size="lg">
-              Start exploring <ArrowRight size={16} />
+
+          <div className="mt-8 flex flex-wrap items-center gap-3.5">
+            <Button to="/lunar" variant="primary" size="lg" className="shadow-[0_0_24px_rgba(77,163,255,0.35)] font-semibold">
+              Start exploring <ArrowRight size={17} />
             </Button>
-            <Button to="/missions" variant="secondary" size="lg">
+            <Button to="/missions" variant="secondary" size="lg" className="font-medium">
               Browse missions
             </Button>
           </div>
         </motion.div>
       </section>
 
-      {/* ── Stats ── */}
-      <section>
+      {/* ── Real Counts Stats ── */}
+      <section className="mt-4">
         {error ? (
           <ErrorState message={error.message} onRetry={retry} />
         ) : loading ? (
@@ -95,11 +111,11 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* ── Modules ── */}
-      <section className="mt-14">
+      {/* ── Modules Grid ── */}
+      <section className="mt-16">
         <h2
-          className="mb-5 font-bold tracking-tight text-[var(--text-1)]"
-          style={{ fontSize: 'clamp(1.1rem, 2vw + 0.5rem, 1.5rem)', letterSpacing: '-0.01em' }}
+          className="mb-6 font-bold tracking-tight text-[var(--text-1)]"
+          style={{ fontSize: 'clamp(1.25rem, 2.5vw + 0.5rem, 1.75rem)', letterSpacing: '-0.02em' }}
         >
           Explore modules
         </h2>
@@ -112,15 +128,15 @@ export default function HomePage() {
         >
           {/* Featured – Lunar Navigator */}
           <motion.div variants={item} className="md:col-span-2 md:row-span-2">
-            <TiltCard to="/lunar" glow className="relative flex h-full min-h-[280px] flex-col justify-end overflow-hidden p-7">
-              <Moon size={30} strokeWidth={1.4} className="mb-3 text-[var(--earth)]" />
+            <TiltCard to="/lunar" glow className="relative flex h-full min-h-[290px] flex-col justify-end overflow-hidden p-8 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+              <Moon size={34} strokeWidth={1.5} className="mb-4 text-[var(--earth)]" />
               <h3
-                className="font-bold tracking-tight text-[var(--text-1)]"
-                style={{ fontSize: 'clamp(1.4rem, 2.5vw + 0.5rem, 2rem)', letterSpacing: '-0.02em' }}
+                className="font-bold tracking-tight text-white"
+                style={{ fontSize: 'clamp(1.5rem, 2.8vw + 0.5rem, 2.2rem)', letterSpacing: '-0.025em' }}
               >
                 Lunar Landing Navigator
               </h3>
-              <p className="mt-2 max-w-md text-sm text-[var(--text-2)] leading-relaxed">
+              <p className="mt-2.5 max-w-md text-sm sm:text-base text-[var(--text-2)] leading-relaxed">
                 Compare candidate sites by terrain, continuous illumination, and Direct-to-Earth line-of-sight.
               </p>
             </TiltCard>
@@ -128,11 +144,11 @@ export default function HomePage() {
 
           {modules.map((m) => (
             <motion.div key={m.to} variants={item}>
-              <TiltCard to={m.to} className="h-full p-6">
-                <m.icon size={22} strokeWidth={1.5} className="mb-4 text-[var(--earth)]" />
+              <TiltCard to={m.to} className="h-full p-6 border border-white/10 hover:border-white/20 transition-all">
+                <m.icon size={24} strokeWidth={1.5} className="mb-4 text-[var(--earth)]" />
                 <h3
-                  className="font-semibold tracking-tight text-[var(--text-1)]"
-                  style={{ fontSize: '1rem', letterSpacing: '-0.01em' }}
+                  className="font-bold tracking-tight text-[var(--text-1)]"
+                  style={{ fontSize: '1.05rem', letterSpacing: '-0.01em' }}
                 >
                   {m.title}
                 </h3>
@@ -143,26 +159,26 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* ── Data provenance ── */}
-      <section className="mt-14">
+      {/* ── Latest Published Data Provenance ── */}
+      <section className="mt-16">
         <GlassCard title="Latest published data provenance">
-          <div className="space-y-3 text-sm text-[var(--text-2)]">
+          <div className="space-y-3.5 text-sm text-[var(--text-2)] leading-relaxed">
             <p>
               All planetary coordinates, telemetry, and camera images displayed across this navigator are retrieved
               directly from official published NASA archives (PDS Geosciences Node, NAIF SPICE, and JPL raw mission streams).
             </p>
             <div className="grid gap-4 pt-2 md:grid-cols-3">
-              <div className="rounded-xl border border-[var(--border)] bg-white/5 p-4">
-                <p className="font-bold text-white">NASA PDS PLACES</p>
-                <p className="mt-1 text-xs">502 localized traverse records from Mars 2020 best_interp.csv</p>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4 shadow-sm backdrop-blur-sm">
+                <p className="font-bold text-white tracking-tight">NASA PDS PLACES</p>
+                <p className="mt-1 text-xs text-[var(--text-2)]">502 localized traverse records from Mars 2020 best_interp.csv</p>
               </div>
-              <div className="rounded-xl border border-[var(--border)] bg-white/5 p-4">
-                <p className="font-bold text-white">NASA LRO LOLA DEM</p>
-                <p className="mt-1 text-xs">240 m/pixel south polar elevation model (75°S to 90°S)</p>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4 shadow-sm backdrop-blur-sm">
+                <p className="font-bold text-white tracking-tight">NASA LRO LOLA DEM</p>
+                <p className="mt-1 text-xs text-[var(--text-2)]">240 m/pixel south polar elevation model (75°S to 90°S)</p>
               </div>
-              <div className="rounded-xl border border-[var(--border)] bg-white/5 p-4">
-                <p className="font-bold text-white">NASA Mars 2020 Raw Feed</p>
-                <p className="mt-1 text-xs">Verified instrument images with official NASA hotlinks</p>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4 shadow-sm backdrop-blur-sm">
+                <p className="font-bold text-white tracking-tight">NASA Mars 2020 Raw Feed</p>
+                <p className="mt-1 text-xs text-[var(--text-2)]">Verified instrument images with official NASA hotlinks</p>
               </div>
             </div>
           </div>

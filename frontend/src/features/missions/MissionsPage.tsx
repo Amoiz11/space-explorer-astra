@@ -6,7 +6,7 @@ import { useAsync } from '../../utils/useAsync'
 import { formatDate } from '../../utils/format'
 import Chip from '../../components/Chip'
 import ErrorState from '../../components/ErrorState'
-import PageHeader from '../../components/PageHeader'
+import PageHero from '../../components/PageHero'
 import Skeleton from '../../components/Skeleton'
 import StatusChip from '../../components/StatusChip'
 import TiltCard from '../../components/TiltCard'
@@ -27,7 +27,7 @@ function MissionList({ body }: { body: BodyId }) {
       {list.data.map((m) => (
         <TiltCard key={m.id} to={`/missions/${m.id}`} className="p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-xl">{m.name}</h3>
+            <h3 className="text-xl font-bold tracking-tight text-white">{m.name}</h3>
             <StatusChip status={m.status} />
           </div>
           <div className="mt-3 flex flex-wrap gap-2">{m.types.map((t) => <Chip key={t} label={t} />)}</div>
@@ -48,10 +48,11 @@ export default function MissionsPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
+      <PageHero
         key={body ?? 'none'}
         title="Missions"
         subtitle={body ? `Missions to ${body === 'mars' ? 'Mars' : 'the Moon'}.` : 'Choose a celestial body to browse its missions.'}
+        scene={{ body: body ?? 'mars', mode: 'rise' }}
       />
 
       {!body ? (
@@ -64,9 +65,9 @@ export default function MissionsPage() {
                 <TiltCard className="flex items-center gap-6 p-7" glow>
                   <span aria-hidden className="h-28 w-28 shrink-0 rounded-full" style={{ background: bodyArt[b.id], boxShadow: '0 0 40px rgba(120,150,220,0.2)' }} />
                   <span>
-                    <span className="block text-2xl">{b.name}</span>
+                    <span className="block text-2xl font-bold tracking-tight text-white">{b.name}</span>
                     <span className="mono mt-2 block text-sm text-[var(--text-2)]">{b.missionCount} missions</span>
-                    <span className="mt-3 block text-sm text-[var(--earth)]">View missions</span>
+                    <span className="mt-3 block text-sm font-semibold text-[var(--earth)]">View missions →</span>
                   </span>
                 </TiltCard>
               </button>

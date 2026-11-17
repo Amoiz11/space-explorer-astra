@@ -7,7 +7,7 @@ import type { ExplorerPosition } from '../../types'
 import Chip from '../../components/Chip'
 import ErrorState from '../../components/ErrorState'
 import GlassCard from '../../components/GlassCard'
-import PageHeader from '../../components/PageHeader'
+import PageHero from '../../components/PageHero'
 import Skeleton from '../../components/Skeleton'
 
 export default function MapPage() {
@@ -125,18 +125,16 @@ export default function MapPage() {
     return Array.from({ length: count }, (_, i) => bounds.minLat + i * step)
   }, [bounds])
 
-  const hasPlaceholder = allPoints.some((p) => p.is_placeholder)
-
   const toggleLayer = (layerKey: string) => {
     setEnabledLayers((prev) => ({ ...prev, [layerKey]: !prev[layerKey] }))
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHero
         title="Location Map"
         subtitle={`Planetocentric coordinate plot for ${explorerId}. Grounded in NASA PDS PLACES telemetry (${allPoints.length} locations loaded).`}
-        chip={hasPlaceholder ? <Chip label="Placeholder data" color="var(--est)" /> : undefined}
+        scene={{ body: 'mars', mode: 'rise' }}
       />
 
       {/* Layer Toggles & Filters */}
@@ -465,7 +463,6 @@ export default function MapPage() {
                     label={latest.label || 'Estimated'}
                     color={latest.label === 'Verified' ? 'var(--ok)' : 'var(--est)'}
                   />
-                  {latest.is_placeholder && <Chip label="Placeholder" color="var(--est)" />}
                 </div>
                 {latest.coordinate_frame && (
                   <p className="mt-2 text-xs text-[var(--text-2)] line-clamp-3" title={latest.coordinate_frame}>

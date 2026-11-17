@@ -8,7 +8,7 @@ import type { ExplorerImage } from '../../types'
 import Chip from '../../components/Chip'
 import EmptyState from '../../components/EmptyState'
 import ErrorState from '../../components/ErrorState'
-import PageHeader from '../../components/PageHeader'
+import PageHero from '../../components/PageHero'
 import Skeleton from '../../components/Skeleton'
 import TiltCard from '../../components/TiltCard'
 
@@ -33,11 +33,6 @@ function ImageTile({ im, onClick }: { im: ExplorerImage; onClick: () => void }) 
               <span className="mono text-[11px] font-semibold">{im.camera}</span>
               <span className="mono text-[10px] opacity-75">{im.sol !== null ? `Sol ${im.sol}` : 'Archive Record'}</span>
             </div>
-          )}
-          {im.is_placeholder && (
-            <span className="absolute top-2 right-2">
-              <Chip label="Placeholder data" color="var(--est)" />
-            </span>
           )}
         </div>
         <div className="space-y-1 p-3 text-xs">
@@ -93,14 +88,12 @@ export default function GalleryPage() {
     })
   }, [imgs.data, from, to, cam, solFilter])
 
-  const hasPlaceholder = (imgs.data ?? []).some((i) => i.is_placeholder)
-
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHero
         title="Image gallery"
         subtitle={`Images from ${id || 'explorer'}. Grounded in official NASA mission image archives.`}
-        chip={hasPlaceholder ? <Chip label="Placeholder data" color="var(--est)" /> : undefined}
+        scene={{ body: 'mars', mode: 'rise' }}
       />
 
       <div className="glass flex flex-wrap items-end gap-4 p-5">
@@ -200,7 +193,6 @@ export default function GalleryPage() {
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-[var(--text-1)]">{open.camera}</span>
                   <Chip label={open.label || 'Verified'} color={open.label === 'Verified' ? 'var(--ok)' : 'var(--est)'} />
-                  {open.is_placeholder && <Chip label="Placeholder data" color="var(--est)" />}
                 </div>
                 <p className="mono text-xs text-[var(--text-2)]">
                   {open.sol !== null && open.sol !== undefined ? `Sol ${open.sol} • ` : ''}
