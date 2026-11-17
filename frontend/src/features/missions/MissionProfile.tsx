@@ -6,7 +6,7 @@ import { useUI } from '../../store/ui'
 import Chip from '../../components/Chip'
 import ErrorState from '../../components/ErrorState'
 import GlassCard from '../../components/GlassCard'
-import PageHero from '../../components/PageHero'
+import PageHeader from '../../components/PageHeader'
 import Skeleton from '../../components/Skeleton'
 import StatusChip from '../../components/StatusChip'
 
@@ -27,15 +27,13 @@ export default function MissionProfile() {
 
   return (
     <div className="space-y-6">
-      <PageHero
+      <PageHeader
         title={d.name}
         subtitle={d.summary}
-        chips={<><StatusChip status={d.status} />{d.types.map((t, i) => <Chip key={`${t}-${i}`} label={t} />)}</>}
-        scene={{ body: d.body, mode: 'rise' }}
+        chip={<><StatusChip status={d.status} />{d.types.map((t, i) => <Chip key={`${t}-${i}`} label={t} />)}</>}
         actions={<>
           <Link to={`/explorers/${d.explorer_id}/map`} className="btn btn-primary">Map</Link>
           <Link to={`/explorers/${d.explorer_id}/gallery`} className="btn btn-secondary">Gallery</Link>
-          <Link to={`/time-machine?explorer=${d.explorer_id}`} className="btn btn-secondary">Time Machine</Link>
         </>}
       />
 

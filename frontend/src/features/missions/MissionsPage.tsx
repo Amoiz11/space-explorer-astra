@@ -6,7 +6,7 @@ import { useAsync } from '../../utils/useAsync'
 import { formatDate } from '../../utils/format'
 import Chip from '../../components/Chip'
 import ErrorState from '../../components/ErrorState'
-import PageHero from '../../components/PageHero'
+import PageHeader from '../../components/PageHeader'
 import Skeleton from '../../components/Skeleton'
 import StatusChip from '../../components/StatusChip'
 import TiltCard from '../../components/TiltCard'
@@ -48,11 +48,10 @@ export default function MissionsPage() {
 
   return (
     <div className="space-y-8">
-      <PageHero
+      <PageHeader
         key={body ?? 'none'}
         title="Missions"
-        subtitle={body ? `Missions to the ${body === 'mars' ? 'Mars' : 'Moon'}.` : 'Choose a body to see its missions.'}
-        scene={{ body: body ?? 'mars', mode: 'rise' }}
+        subtitle={body ? `Missions to ${body === 'mars' ? 'Mars' : 'the Moon'}.` : 'Choose a celestial body to browse its missions.'}
       />
 
       {!body ? (

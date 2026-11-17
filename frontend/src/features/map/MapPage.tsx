@@ -7,7 +7,7 @@ import type { ExplorerPosition } from '../../types'
 import Chip from '../../components/Chip'
 import ErrorState from '../../components/ErrorState'
 import GlassCard from '../../components/GlassCard'
-import PageHero from '../../components/PageHero'
+import PageHeader from '../../components/PageHeader'
 import Skeleton from '../../components/Skeleton'
 
 export default function MapPage() {
@@ -133,11 +133,10 @@ export default function MapPage() {
 
   return (
     <div className="space-y-6">
-      <PageHero
+      <PageHeader
         title="Location Map"
         subtitle={`Planetocentric coordinate plot for ${explorerId}. Grounded in NASA PDS PLACES telemetry (${allPoints.length} locations loaded).`}
-        chips={hasPlaceholder ? <Chip label="Placeholder data" color="var(--est)" /> : undefined}
-        scene={{ body: 'mars', mode: 'rise' }}
+        chip={hasPlaceholder ? <Chip label="Placeholder data" color="var(--est)" /> : undefined}
       />
 
       {/* Layer Toggles & Filters */}

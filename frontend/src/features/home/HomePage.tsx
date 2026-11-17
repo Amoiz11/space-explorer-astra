@@ -1,6 +1,5 @@
 import { motion, MotionConfig, type Variants } from 'framer-motion'
-import { ArrowRight, Bot, History, Images, Moon, Rocket } from 'lucide-react'
-import HeroScene from '../../components/HeroScene'
+import { ArrowRight, Bot, Images, Moon, Rocket } from 'lucide-react'
 import StatCard from '../../components/StatCard'
 import GlassCard from '../../components/GlassCard'
 import Skeleton from '../../components/Skeleton'
@@ -14,28 +13,12 @@ import { SITE_TAGLINE } from '../../config/site'
 const container: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } }
 const item: Variants = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }
 
+/** Only the modules that still exist after removing Time Machine */
 const modules = [
   { to: '/missions', title: 'Missions', text: 'Browse Mars and Moon missions with verified parameters.', icon: Rocket },
-  { to: '/time-machine', title: 'Time Machine', text: 'Scrub through rover odometry and published sols.', icon: History },
   { to: '/gallery', title: 'Image Gallery', text: 'NASA raw instrument camera imagery and archives.', icon: Images },
   { to: '/assistant', title: 'AI Assistant', text: 'Ask questions with official NASA citations.', icon: Bot },
 ]
-
-function HorizonArt() {
-  return (
-    <svg viewBox="0 0 320 120" className="absolute right-4 top-4 hidden w-[56%] opacity-90 md:block" aria-hidden>
-      <defs>
-        <linearGradient id="hz" x1="0" x2="1"><stop offset="0" stopColor="#fff" stopOpacity="0" /><stop offset=".5" stopColor="#fff" stopOpacity=".7" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
-      </defs>
-      <path d="M0 96 C40 88 70 100 110 92 S190 84 230 94 S290 90 320 96 L320 120 L0 120Z" fill="rgba(255,255,255,0.05)" />
-      <line x1="0" y1="96" x2="320" y2="96" stroke="url(#hz)" strokeWidth="1.5" />
-      <path d="M20 80 Q110 20 200 70" fill="none" stroke="var(--sun)" strokeOpacity=".35" strokeDasharray="3 4" />
-      <path d="M90 84 Q190 36 290 64" fill="none" stroke="var(--earth)" strokeOpacity=".35" strokeDasharray="3 4" />
-      <circle cx="150" cy="38" r="16" fill="var(--sun)" opacity=".15" /><circle cx="150" cy="38" r="5" fill="var(--sun)" />
-      <circle cx="236" cy="50" r="13" fill="var(--earth)" opacity=".15" /><circle cx="236" cy="50" r="4" fill="var(--earth)" />
-    </svg>
-  )
-}
 
 export default function HomePage() {
   const missions = useAsync(getAllMissions, [])
@@ -49,19 +32,28 @@ export default function HomePage() {
 
   return (
     <MotionConfig reducedMotion="user">
-      {/* Hero */}
-      <section className="relative flex min-h-[calc(100svh-7rem)] items-center">
-        <div className="absolute inset-y-0 right-0 w-full opacity-50 md:w-[64%] md:opacity-100">
-          <HeroScene body="earth" mode="side" moon />
-        </div>
-
+      {/* ── Compact hero (no tall hero block; background is the fixed scene) ── */}
+      <section className="pt-8 pb-10 md:pt-14 md:pb-12">
         <motion.div
-          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}
-          className="relative z-10 max-w-2xl"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="max-w-2xl"
         >
-          <h1 className="display text-5xl md:text-[64px]">Lunar Landing Site Navigator</h1>
-          <p className="mt-6 max-w-md text-base text-[var(--text-2)]">{SITE_TAGLINE}</p>
-          <div className="mt-9 flex flex-wrap gap-3">
+          <h1
+            className="display font-bold tracking-tight"
+            style={{
+              fontSize: 'clamp(2.2rem, 5vw + 1rem, 4rem)',
+              lineHeight: 1.1,
+              letterSpacing: '-0.03em',
+            }}
+          >
+            Lunar Landing Site Navigator
+          </h1>
+          <p className="mt-4 max-w-md text-base leading-relaxed text-[var(--text-2)]">
+            {SITE_TAGLINE}
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3">
             <Button to="/lunar" variant="primary" size="lg">
               Start exploring <ArrowRight size={16} />
             </Button>
@@ -72,64 +64,104 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* Real Counts Stats */}
-      <section className="mt-6">
+      {/* ── Stats ── */}
+      <section>
         {error ? (
           <ErrorState message={error.message} onRetry={retry} />
         ) : loading ? (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28" />)}</div>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28" />)}
+          </div>
         ) : (
-          <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <motion.div variants={item}><StatCard label="Missions" value={missions.data?.length ?? 'Unknown'} note="Official NASA archive" /></motion.div>
-            <motion.div variants={item}><StatCard label="Explorers" value={rovers.data?.length ?? 'Unknown'} note="Active & historical rovers" /></motion.div>
-            <motion.div variants={item}><StatCard label="Candidate sites" value={sites.data?.length ?? 'Unknown'} note="Moon south pole zones" /></motion.div>
-            <motion.div variants={item}><StatCard label="Imported images" value={images.data?.length ?? 'Unknown'} note="NASA Perseverance raw feed" /></motion.div>
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-2 gap-4 md:grid-cols-4"
+          >
+            <motion.div variants={item}>
+              <StatCard label="Missions" value={missions.data?.length ?? 'Unknown'} note="Official NASA archive" />
+            </motion.div>
+            <motion.div variants={item}>
+              <StatCard label="Explorers" value={rovers.data?.length ?? 'Unknown'} note="Active & historical rovers" />
+            </motion.div>
+            <motion.div variants={item}>
+              <StatCard label="Candidate sites" value={sites.data?.length ?? 'Unknown'} note="Moon south pole zones" />
+            </motion.div>
+            <motion.div variants={item}>
+              <StatCard label="Imported images" value={images.data?.length ?? 'Unknown'} note="NASA Perseverance raw feed" />
+            </motion.div>
           </motion.div>
         )}
       </section>
 
-      {/* Modules */}
-      <section className="mt-16">
-        <h2 className="mb-6 text-2xl">Explore modules</h2>
-        <motion.div variants={container} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-60px' }} className="grid gap-4 md:grid-cols-3">
+      {/* ── Modules ── */}
+      <section className="mt-14">
+        <h2
+          className="mb-5 font-bold tracking-tight text-[var(--text-1)]"
+          style={{ fontSize: 'clamp(1.1rem, 2vw + 0.5rem, 1.5rem)', letterSpacing: '-0.01em' }}
+        >
+          Explore modules
+        </h2>
+        <motion.div
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-60px' }}
+          className="grid gap-4 md:grid-cols-3"
+        >
+          {/* Featured – Lunar Navigator */}
           <motion.div variants={item} className="md:col-span-2 md:row-span-2">
-            <TiltCard to="/lunar" glow className="relative flex h-full min-h-[300px] flex-col justify-end overflow-hidden p-7">
-              <HorizonArt />
-              <Moon size={34} strokeWidth={1.4} className="mb-4 text-[var(--earth)]" />
-              <h3 className="text-3xl">Lunar Landing Navigator</h3>
-              <p className="mt-2 max-w-md text-[var(--text-2)]">Compare candidate sites by terrain, continuous illumination, and Direct-to-Earth line-of-sight.</p>
+            <TiltCard to="/lunar" glow className="relative flex h-full min-h-[280px] flex-col justify-end overflow-hidden p-7">
+              <Moon size={30} strokeWidth={1.4} className="mb-3 text-[var(--earth)]" />
+              <h3
+                className="font-bold tracking-tight text-[var(--text-1)]"
+                style={{ fontSize: 'clamp(1.4rem, 2.5vw + 0.5rem, 2rem)', letterSpacing: '-0.02em' }}
+              >
+                Lunar Landing Navigator
+              </h3>
+              <p className="mt-2 max-w-md text-sm text-[var(--text-2)] leading-relaxed">
+                Compare candidate sites by terrain, continuous illumination, and Direct-to-Earth line-of-sight.
+              </p>
             </TiltCard>
           </motion.div>
+
           {modules.map((m) => (
             <motion.div key={m.to} variants={item}>
               <TiltCard to={m.to} className="h-full p-6">
                 <m.icon size={22} strokeWidth={1.5} className="mb-4 text-[var(--earth)]" />
-                <h3 className="text-[16px]">{m.title}</h3>
-                <p className="mt-2 text-sm text-[var(--text-2)]">{m.text}</p>
+                <h3
+                  className="font-semibold tracking-tight text-[var(--text-1)]"
+                  style={{ fontSize: '1rem', letterSpacing: '-0.01em' }}
+                >
+                  {m.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--text-2)]">{m.text}</p>
               </TiltCard>
             </motion.div>
           ))}
         </motion.div>
       </section>
 
-      {/* Latest Published Provenance */}
-      <section className="mt-16">
+      {/* ── Data provenance ── */}
+      <section className="mt-14">
         <GlassCard title="Latest published data provenance">
           <div className="space-y-3 text-sm text-[var(--text-2)]">
             <p>
-              All planetary coordinates, telemetry, and camera images displayed across this navigator are retrieved directly from official published NASA archives (PDS Geosciences Node, NAIF SPICE, and JPL raw mission streams).
+              All planetary coordinates, telemetry, and camera images displayed across this navigator are retrieved
+              directly from official published NASA archives (PDS Geosciences Node, NAIF SPICE, and JPL raw mission streams).
             </p>
             <div className="grid gap-4 pt-2 md:grid-cols-3">
               <div className="rounded-xl border border-[var(--border)] bg-white/5 p-4">
-                <p className="font-medium text-white">NASA PDS PLACES</p>
+                <p className="font-bold text-white">NASA PDS PLACES</p>
                 <p className="mt-1 text-xs">502 localized traverse records from Mars 2020 best_interp.csv</p>
               </div>
               <div className="rounded-xl border border-[var(--border)] bg-white/5 p-4">
-                <p className="font-medium text-white">NASA LRO LOLA DEM</p>
+                <p className="font-bold text-white">NASA LRO LOLA DEM</p>
                 <p className="mt-1 text-xs">240 m/pixel south polar elevation model (75°S to 90°S)</p>
               </div>
               <div className="rounded-xl border border-[var(--border)] bg-white/5 p-4">
-                <p className="font-medium text-white">NASA Mars 2020 Raw Feed</p>
+                <p className="font-bold text-white">NASA Mars 2020 Raw Feed</p>
                 <p className="mt-1 text-xs">Verified instrument images with official NASA hotlinks</p>
               </div>
             </div>

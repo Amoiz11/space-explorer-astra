@@ -8,7 +8,6 @@ const links = [
   { to: '/', label: 'Home' },
   { to: '/lunar', label: 'Lunar Navigator' },
   { to: '/missions', label: 'Missions' },
-  { to: '/time-machine', label: 'Time Machine' },
   { to: '/gallery', label: 'Gallery' },
 ]
 

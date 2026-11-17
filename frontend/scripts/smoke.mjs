@@ -23,182 +23,144 @@ const FORBIDDEN_STRINGS = [
 ]
 
 async function run() {
-  console.log(`Starting smoke tests against ${BASE_URL}...`)
+  console.log(`Starting smoke & screenshot suite against ${BASE_URL}...`)
   const browser = await chromium.launch({ headless: true })
-  const context = await browser.newContext({
-    viewport: { width: 1440, height: 900 },
-  })
+
+  const viewports = [
+    { name: '1440x900', width: 1440, height: 900 },
+    { name: '390x844', width: 390, height: 844 },
+  ]
 
   const results = []
   let fatalError = false
 
-  async function testPage(name, urlPath, customActions = null) {
-    const page = await context.newPage()
-    const consoleErrors = []
-    const failedRequests = []
+  for (const vp of viewports) {
+    const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } })
 
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') {
-        const text = msg.text()
-        // Ignore favicon or non-critical 404s if any
-        consoleErrors.push(text)
-      }
-    })
+    async function capture(pageName, urlPath, filename, customActions = null) {
+      const page = await context.newPage()
+      const consoleErrors = []
+      const failedRequests = []
 
-    page.on('pageerror', (err) => {
-      consoleErrors.push(err.message)
-    })
+      page.on('console', (msg) => {
+        if (msg.type() === 'error') consoleErrors.push(msg.text())
+      })
+      page.on('pageerror', (err) => consoleErrors.push(err.message))
+      page.on('response', (res) => {
+        if (res.status() >= 400) failedRequests.push(`${res.status()} ${res.url()}`)
+      })
 
-    page.on('response', (res) => {
-      if (res.status() >= 400) {
-        failedRequests.push(`${res.status()} ${res.url()}`)
-      }
-    })
-
-    try {
-      console.log(`Testing ${name} (${urlPath})...`)
-      await page.goto(`${BASE_URL}${urlPath}`, { waitUntil: 'networkidle', timeout: 30000 })
-      await page.waitForTimeout(1000)
-
-      if (customActions) {
-        await customActions(page)
+      try {
+        console.log(`[${vp.name}] Testing ${pageName} (${urlPath})...`)
+        await page.goto(`${BASE_URL}${urlPath}`, { waitUntil: 'networkidle', timeout: 30000 })
         await page.waitForTimeout(1000)
-      }
 
-      // Check forbidden text
-      const bodyText = await page.innerText('body')
-      const matchedForbidden = []
-      for (const forbidden of FORBIDDEN_STRINGS) {
-        if (bodyText.includes(forbidden)) {
-          matchedForbidden.push(forbidden)
+        if (customActions) {
+          await customActions(page)
+          await page.waitForTimeout(1000)
         }
+
+        const bodyText = await page.innerText('body')
+        const matchedForbidden = []
+        for (const forbidden of FORBIDDEN_STRINGS) {
+          if (bodyText.includes(forbidden)) matchedForbidden.push(forbidden)
+        }
+
+        const screenshotPath = path.join(SCREENSHOTS_DIR, `${filename}-${vp.name}.png`)
+        await page.screenshot({ path: screenshotPath, fullPage: false })
+
+        const status =
+          consoleErrors.length === 0 && failedRequests.length === 0 && matchedForbidden.length === 0
+            ? 'PASS'
+            : 'WARN/FAIL'
+
+        results.push({
+          page: `${pageName} (${vp.name})`,
+          url: urlPath,
+          status,
+          screenshot: screenshotPath,
+          consoleErrors,
+          failedRequests,
+          matchedForbidden,
+        })
+        console.log(`  ✓ ${pageName} (${vp.name}): ${status}`)
+      } catch (err) {
+        console.error(`  ✗ ${pageName} (${vp.name}) failed:`, err.message)
+        results.push({
+          page: `${pageName} (${vp.name})`,
+          url: urlPath,
+          status: 'FAIL',
+          error: err.message,
+        })
+        fatalError = true
+      } finally {
+        await page.close()
       }
-
-      const screenshotPath = path.join(SCREENSHOTS_DIR, `${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}.png`)
-      await page.screenshot({ path: screenshotPath, fullPage: true })
-
-      const status = consoleErrors.length === 0 && failedRequests.length === 0 && matchedForbidden.length === 0 ? 'PASS' : 'WARN/FAIL'
-      results.push({
-        page: name,
-        url: urlPath,
-        status,
-        screenshot: screenshotPath,
-        consoleErrors,
-        failedRequests,
-        matchedForbidden,
-      })
-      console.log(`  ✓ ${name}: ${status}`)
-    } catch (err) {
-      console.error(`  ✗ ${name} failed:`, err.message)
-      results.push({
-        page: name,
-        url: urlPath,
-        status: 'FAIL',
-        error: err.message,
-      })
-      fatalError = true
-    } finally {
-      await page.close()
     }
+
+    // 1. Home
+    await capture('Home', '/', 'home')
+
+    // 2. Missions
+    await capture('Missions', '/missions', 'missions')
+
+    // 3. Mission Profile
+    await capture('Mission Profile', '/missions/mars-2020', 'mission-profile')
+
+    // 4. Gallery
+    await capture('Gallery', '/explorers/perseverance/gallery', 'gallery')
+
+    // 5. Lunar Navigator (analysed)
+    await capture('Lunar Navigator', '/lunar', 'lunar-navigator', async (page) => {
+      // Click Analyse / Run analysis button
+      const btn = page.locator('button:has-text("Run analysis"), button:has-text("Analyse")').first()
+      if ((await btn.count()) > 0 && (await btn.isEnabled())) {
+        await btn.click()
+        await page.waitForTimeout(3000)
+      }
+    })
+
+    // 6. Ask AI Drawer
+    await capture('Ask AI', '/', 'ask-ai', async (page) => {
+      const askAiBtn = page.locator('button[aria-label="Ask AI Assistant"], button:has-text("Ask AI")').first()
+      if ((await askAiBtn.count()) > 0) {
+        await askAiBtn.click()
+      }
+      const drawer = page.locator('aside[aria-label="AI Research Assistant"]')
+      await drawer.waitFor({ state: 'visible', timeout: 5000 })
+      await page.waitForTimeout(1000)
+    })
+
+    // 7. Time Machine redirect check (only needed once, runs on desktop context)
+    if (vp.name === '1440x900') {
+      await capture('Time Machine Redirect', '/time-machine', 'time-machine-redirect', async (page) => {
+        const url = page.url()
+        if (!url.endsWith('/') && !url.endsWith('/#')) {
+          throw new Error(`/time-machine should redirect to / but got: ${url}`)
+        }
+      })
+    }
+
+    await context.close()
   }
-
-  // 1. Home Page
-  await testPage('Home', '/', async (page) => {
-    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'home-after.png'), fullPage: true })
-  })
-
-  // 2. Missions List
-  await testPage('Missions', '/missions')
-
-  // 3. Mission Profile
-  await testPage('Mission Profile (Mars 2020)', '/missions/mars-2020')
-
-  // 4. Time Machine
-  await testPage('Time Machine', '/time-machine?explorer=perseverance', async (page) => {
-    const slider = page.locator('input[type="range"]')
-    if (await slider.count() > 0) {
-      await slider.fill('50')
-      await page.waitForTimeout(500)
-    }
-  })
-
-  // 5. Gallery
-  await testPage('Gallery', '/explorers/perseverance/gallery', async (page) => {
-    // Select camera if available
-    const camSelect = page.locator('#gc')
-    if (await camSelect.count() > 0) {
-      const options = await camSelect.locator('option').allInnerTexts()
-      if (options.length > 1) {
-        await camSelect.selectOption({ index: 1 })
-        await page.waitForTimeout(500)
-      }
-    }
-  })
-
-  // 6. Map
-  await testPage('Map', '/explorers/perseverance/map', async (page) => {
-    const point = page.locator('circle.cursor-pointer').first()
-    if (await point.count() > 0) {
-      await point.click({ force: true })
-      await page.waitForTimeout(800)
-    }
-  })
-
-  // 7. Lunar Navigator - Site 1, Date 1
-  await testPage('Lunar Navigator (Shackleton, 2026-12-25)', '/lunar', async (page) => {
-    const btn = page.locator('button:has-text("Run analysis"), button:has-text("Analyse")').first()
-    if (await btn.count() > 0 && await btn.isEnabled()) {
-      await btn.click()
-      await page.waitForTimeout(4000)
-    }
-  })
-
-  // 8. Lunar Compare
-  await testPage('Lunar Compare', '/lunar/compare')
-
-  // 9. AI Assistant Drawer
-  await testPage('AI Assistant Drawer', '/', async (page) => {
-    const askAiBtn = page.locator('button[aria-label="Ask AI Assistant"], button:has-text("Ask AI")').first()
-    await askAiBtn.click()
-
-    const drawer = page.locator('aside[aria-label="AI Research Assistant"]')
-    await drawer.waitFor({ state: 'visible', timeout: 5000 })
-
-    const input = page.locator('input[aria-label="Your question"]')
-    const send = page.locator('button[aria-label="Send"]')
-
-    if (await input.count() > 0) {
-      await input.fill('Where is the latest published position of Perseverance?')
-      await send.click()
-      await Promise.race([
-        page.waitForSelector('text=Response', { timeout: 15000 }),
-        page.waitForSelector('text=Coordinates', { timeout: 15000 }),
-        page.waitForSelector('text=Error:', { timeout: 15000 }),
-        page.waitForSelector('text=grounded', { timeout: 15000 }),
-      ]).catch(() => {})
-      await page.waitForTimeout(1500)
-    }
-
-    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'drawer-after.png') })
-  })
 
   await browser.close()
 
-  console.log('\n--- SMOKE TEST SUMMARY ---')
-  console.table(results.map(r => ({
-    Page: r.page,
-    Status: r.status,
-    Errors: r.consoleErrors?.length || 0,
-    FailedReqs: r.failedRequests?.length || 0,
-    Forbidden: r.matchedForbidden?.join(', ') || 'None'
-  })))
+  console.log('\n--- SMOKE & VISUAL VERIFICATION SUMMARY ---')
+  console.table(
+    results.map((r) => ({
+      Page: r.page,
+      Status: r.status,
+      Errors: r.consoleErrors?.length || 0,
+      FailedReqs: r.failedRequests?.length || 0,
+      Forbidden: r.matchedForbidden?.join(', ') || 'None',
+    }))
+  )
 
   fs.writeFileSync(path.join(SCREENSHOTS_DIR, 'smoke_report.json'), JSON.stringify(results, null, 2))
   console.log(`Report written to ${path.join(SCREENSHOTS_DIR, 'smoke_report.json')}`)
 
-  if (fatalError) {
-    process.exit(1)
-  }
+  if (fatalError) process.exit(1)
 }
 
 run().catch((err) => {

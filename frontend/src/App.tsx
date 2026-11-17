@@ -8,7 +8,6 @@ import MissionsPage from './features/missions/MissionsPage'
 import MissionProfile from './features/missions/MissionProfile'
 import MapPage from './features/map/MapPage'
 import GalleryPage from './features/gallery/GalleryPage'
-import TimeMachinePage from './features/timemachine/TimeMachinePage'
 import { useUI } from './store/ui'
 
 function AssistantRedirect() {
@@ -30,7 +29,8 @@ export default function App() {
         <Route path="/map" element={<Navigate to="/explorers/perseverance/map" replace />} />
         <Route path="/explorers/:id/gallery" element={<GalleryPage />} />
         <Route path="/gallery" element={<Navigate to="/explorers/perseverance/gallery" replace />} />
-        <Route path="/time-machine" element={<TimeMachinePage />} />
+        {/* Time Machine removed – redirect to home */}
+        <Route path="/time-machine" element={<Navigate to="/" replace />} />
         <Route path="/lunar" element={<LunarPage />} />
         <Route path="/lunar/compare" element={<LunarComparePage />} />
         <Route path="/assistant" element={<AssistantRedirect />} />

@@ -8,7 +8,7 @@ import type { ExplorerImage } from '../../types'
 import Chip from '../../components/Chip'
 import EmptyState from '../../components/EmptyState'
 import ErrorState from '../../components/ErrorState'
-import PageHero from '../../components/PageHero'
+import PageHeader from '../../components/PageHeader'
 import Skeleton from '../../components/Skeleton'
 import TiltCard from '../../components/TiltCard'
 
@@ -97,11 +97,10 @@ export default function GalleryPage() {
 
   return (
     <div className="space-y-6">
-      <PageHero
+      <PageHeader
         title="Image gallery"
         subtitle={`Images from ${id || 'explorer'}. Grounded in official NASA mission image archives.`}
-        chips={hasPlaceholder ? <Chip label="Placeholder data" color="var(--est)" /> : undefined}
-        scene={{ body: 'mars', mode: 'rise' }}
+        chip={hasPlaceholder ? <Chip label="Placeholder data" color="var(--est)" /> : undefined}
       />
 
       <div className="glass flex flex-wrap items-end gap-4 p-5">

@@ -4,7 +4,7 @@ import { useAsync } from '../../utils/useAsync'
 import Chip from '../../components/Chip'
 import ErrorState from '../../components/ErrorState'
 import GlassCard from '../../components/GlassCard'
-import PageHero from '../../components/PageHero'
+import PageHeader from '../../components/PageHeader'
 import SiteChip from '../../components/SiteChip'
 import Skeleton from '../../components/Skeleton'
 import ComparisonSection from './ComparisonSection'
@@ -17,11 +17,10 @@ export default function LunarComparePage() {
 
   return (
     <div className="space-y-6">
-      <PageHero
+      <PageHeader
         title="Compare sites and dates"
         subtitle="See which site has more sunlight and more Earth visibility."
-        chips={isPlaceholder ? <Chip label="Placeholder data" color="var(--est)" /> : undefined}
-        scene={{ body: 'moon', mode: 'rise', markers: true }}
+        chip={isPlaceholder ? <Chip label="Placeholder data" color="var(--est)" /> : undefined}
       />
       {sites.loading ? <Skeleton className="h-24" /> : sites.error ? <ErrorState message={sites.error.message} onRetry={sites.retry} /> : (
         <GlassCard title="Sites">
